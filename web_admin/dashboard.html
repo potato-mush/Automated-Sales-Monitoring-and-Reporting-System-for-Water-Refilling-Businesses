@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Water Refilling System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-droplet-fill me-2"></i>
+                Water Refilling System
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-link text-white dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <span id="userName">Admin</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-2 d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="dashboard.html">
+                                <i class="bi bi-speedometer2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="transactions.html">
+                                <i class="bi bi-receipt"></i>Transactions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="gallons.html">
+                                <i class="bi bi-droplet"></i>Gallons
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="reports.html">
+                                <i class="bi bi-file-earmark-text"></i>Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="qr-print.html">
+                                <i class="bi bi-qr-code"></i>Print QR Codes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="settings.html">
+                                <i class="bi bi-gear"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadDashboard()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card stat-card bg-primary text-white">
+                            <div class="card-body">
+                                <i class="bi bi-receipt icon float-end"></i>
+                                <div class="label">Today's Transactions</div>
+                                <div class="value" id="todayTransactions">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card stat-card bg-success text-white">
+                            <div class="card-body">
+                                <i class="bi bi-currency-dollar icon float-end"></i>
+                                <div class="label">Today's Revenue</div>
+                                <div class="value" id="todayRevenue">₱0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card stat-card bg-info text-white">
+                            <div class="card-body">
+                                <i class="bi bi-droplet icon float-end"></i>
+                                <div class="label">Gallons Sold</div>
+                                <div class="value" id="todayGallons">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body">
+                                <i class="bi bi-exclamation-triangle icon float-end"></i>
+                                <div class="label">Overdue Gallons</div>
+                                <div class="value" id="overdueGallons">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Weekly Sales Trend</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Transaction Types</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="typeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gallon Status & Recent Transactions -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Gallon Inventory</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>In Station</span>
+                                        <strong id="gallonsIn">0</strong>
+                                    </div>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" id="progressIn" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Out</span>
+                                        <strong id="gallonsOut">0</strong>
+                                    </div>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-warning" id="progressOut" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Missing</span>
+                                        <strong id="gallonsMissing">0</strong>
+                                    </div>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-danger" id="progressMissing" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Recent Transactions</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Customer</th>
+                                                <th>Type</th>
+                                                <th>Amount</th>
+                                                <th>Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentTransactions">
+                                            <tr>
+                                                <td colspan="5" class="text-center">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script>
+        // Check auth on page load
+        if (!checkAuth()) {
+            window.location.href = 'index.html';
+        }
+
+        displayUserInfo();
+
+        let salesChart, typeChart;
+
+        async function loadDashboard() {
+            try {
+                const response = await apiCall('/dashboard');
+                const data = await response.json();
+
+                // Update stats cards
+                document.getElementById('todayTransactions').textContent = data.today.transactions;
+                document.getElementById('todayRevenue').textContent = formatCurrency(data.today.revenue);
+                document.getElementById('todayGallons').textContent = data.today.gallons_sold;
+                document.getElementById('overdueGallons').textContent = data.gallons.overdue;
+
+                // Update gallon inventory
+                const total = data.gallons.total;
+                document.getElementById('gallonsIn').textContent = data.gallons.in_station;
+                document.getElementById('gallonsOut').textContent = data.gallons.out;
+                document.getElementById('gallonsMissing').textContent = data.gallons.missing;
+                
+                document.getElementById('progressIn').style.width = (data.gallons.in_station / total * 100) + '%';
+                document.getElementById('progressOut').style.width = (data.gallons.out / total * 100) + '%';
+                document.getElementById('progressMissing').style.width = (data.gallons.missing / total * 100) + '%';
+
+                // Update recent transactions
+                updateRecentTransactions(data.recent_transactions);
+
+                // Load charts
+                await loadCharts();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showToast('Failed to load dashboard data', 'danger');
+            }
+        }
+
+        function updateRecentTransactions(transactions) {
+            const tbody = document.getElementById('recentTransactions');
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No transactions yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(t => `
+                <tr>
+                    <td><small>${t.transaction_code}</small></td>
+                    <td>${t.customer_name}</td>
+                    <td><span class="badge bg-primary">${t.transaction_type}</span></td>
+                    <td><strong>${formatCurrency(t.total_amount)}</strong></td>
+                    <td><small>${formatDateTime(t.created_at)}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadCharts() {
+            // Sales Chart
+            const salesResponse = await apiCall('/dashboard/sales-chart?period=week');
+            const salesData = await salesResponse.json();
+
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChart) salesChart.destroy();
+            
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: salesData.map(d => d.label),
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: salesData.map(d => d.revenue),
+                        borderColor: '#1E88E5',
+                        backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Type Chart
+            const typeResponse = await apiCall('/dashboard/transaction-type-breakdown?period=today');
+            const typeData = await typeResponse.json();
+
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            
+            if (typeChart) typeChart.destroy();
+            
+            typeChart = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Walk-in', 'Delivery', 'Refill Only'],
+                    datasets: [{
+                        data: [
+                            typeData.walk_in.count,
+                            typeData.delivery.count,
+                            typeData.refill_only.count
+                        ],
+                        backgroundColor: ['#1E88E5', '#FFA726', '#66BB6A']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+
+        // Auto refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>
