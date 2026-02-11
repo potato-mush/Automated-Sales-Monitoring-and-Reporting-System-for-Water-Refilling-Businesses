@@ -8,6 +8,7 @@ use App\Models\GallonLog;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class GallonController extends Controller
@@ -65,7 +66,7 @@ class GallonController extends Controller
         }
 
         // Debug logging
-        \Log::info('Gallon Scan Request', [
+        Log::info('Gallon Scan Request', [
             'gallon_code' => $request->gallon_code,
             'code_length' => strlen($request->gallon_code),
             'raw_input' => $request->all()
@@ -76,7 +77,7 @@ class GallonController extends Controller
             ->first();
 
         if (!$gallon) {
-            \Log::warning('Gallon not found', [
+            Log::warning('Gallon not found', [
                 'searched_code' => $request->gallon_code
             ]);
             
@@ -86,7 +87,7 @@ class GallonController extends Controller
             ], 404);
         }
 
-        \Log::info('Gallon found', [
+        Log::info('Gallon found', [
             'gallon_code' => $gallon->gallon_code
         ]);
 
