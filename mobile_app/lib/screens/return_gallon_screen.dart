@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
@@ -21,7 +22,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   void initState() {
     super.initState();
     _scannerController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.noDuplicates,
+      detectionSpeed: DetectionSpeed.normal,
     );
   }
 
@@ -42,9 +43,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
         });
         
         // Add delay for visual feedback
-        await Future.delayed(Duration(milliseconds: 800));
-        
-        setState(() => _showScanner = false);
+        await Future.delayed(Duration(milliseconds: 500));
         
         // Extract gallon code from QR data
         final gallonCode = _extractGallonCode(rawValue);
@@ -57,6 +56,8 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
         
         await _processGallonReturn(gallonCode);
         
+        // Reset processing state to allow next scan
+        await Future.delayed(Duration(milliseconds: 800));
         setState(() {
           _isProcessingQR = false;
           _detectedQR = '';
@@ -66,10 +67,22 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   }
 
   // Extract gallon code from QR data
-  // Handles URLs like http://example.com/gallon/WR-GAL-0001
-  // or plain codes like WR-GAL-0001
+  // Handles:
+  // 1. JSON format: {"code":"GAL001","type":"gallon",...}
+  // 2. URLs: http://example.com/gallon/WR-GAL-0001
+  // 3. Plain codes: WR-GAL-0001 or GAL001
   String _extractGallonCode(String rawValue) {
     String cleaned = rawValue.trim();
+    
+    // Try to parse as JSON first
+    try {
+      final jsonData = jsonDecode(cleaned);
+      if (jsonData is Map && jsonData.containsKey('code')) {
+        cleaned = jsonData['code'].toString();
+      }
+    } catch (e) {
+      // Not JSON, continue with other parsing methods
+    }
     
     // If it's a URL, extract the last segment
     if (cleaned.contains('://') || cleaned.contains('/')) {
@@ -87,7 +100,23 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
       cleaned = cleaned.split('#').first;
     }
     
-    return cleaned.trim();
+    cleaned = cleaned.trim();
+    
+    // Normalize the gallon code format
+    // If code doesn't start with "WR-", add it as prefix
+    if (!cleaned.toUpperCase().startsWith('WR-')) {
+      // Remove any existing prefix like "GAL" and extract just the number
+      final match = RegExp(r'(\d+)').firstMatch(cleaned);
+      if (match != null) {
+        final number = match.group(1)!.padLeft(4, '0');
+        cleaned = 'WR-GAL-$number';
+      } else {
+        // If no number found, assume it's already in correct format
+        cleaned = 'WR-GAL-$cleaned';
+      }
+    }
+    
+    return cleaned;
   }
 
   Future<void> _processGallonReturn(String gallonCode) async {
@@ -151,10 +180,23 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
           : _showManualEntry 
               ? _buildManualEntry() 
               : _buildInstructions(),
-      floatingActionButton: (_showScanner || _showManualEntry) ? null : FloatingActionButton.extended(
-        onPressed: () => setState(() => _showScanner = true),
-        icon: Icon(Icons.qr_code_scanner),
-        label: Text('Scan QR Code'),
+      floatingActionButton: (_showScanner || _showManualEntry) ? null : Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'manual',
+            onPressed: () => setState(() => _showManualEntry = true),
+            child: Icon(Icons.keyboard),
+            backgroundColor: Colors.orange,
+          ),
+          SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'scan',
+            onPressed: () => setState(() => _showScanner = true),
+            icon: Icon(Icons.qr_code_scanner),
+            label: Text('Scan QR'),
+          ),
+        ],
       ),
     );
   }

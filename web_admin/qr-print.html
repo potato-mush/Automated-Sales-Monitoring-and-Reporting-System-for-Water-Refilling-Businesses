@@ -153,7 +153,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Prefix</label>
-                                <input type="text" id="prefix" class="form-control" value="GAL" maxlength="10">
+                                <input type="text" id="prefix" class="form-control" value="WR-GAL-" maxlength="20">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">&nbsp;</label>
@@ -228,7 +228,7 @@
 
                     for (let i = startIdx; i < endIdx; i++) {
                         const gallonNumber = startNumber + i;
-                        const gallonCode = `${prefix}${String(gallonNumber).padStart(3, '0')}`;
+                        const gallonCode = `${prefix}${String(gallonNumber).padStart(4, '0')}`;
                         
                         // Create QR code item
                         const qrItem = document.createElement('div');
@@ -291,7 +291,7 @@
             
             for (let i = 0; i < count; i++) {
                 const gallonNumber = startNumber + i;
-                const gallonCode = `${prefix}${String(gallonNumber).padStart(3, '0')}`;
+                const gallonCode = `${prefix}${String(gallonNumber).padStart(4, '0')}`;
                 gallons.push({
                     code: gallonCode,
                     status: 'in_station',
