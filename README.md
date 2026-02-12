@@ -68,6 +68,8 @@ cd mobile_app
 flutter pub get
 flutter run
 ```
+php artisan serve --host=0.0.0.0 --port=8000
+```
 
 ### Web Admin Panel
 - Open `web_admin/index.html` in browser

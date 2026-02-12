@@ -7,6 +7,8 @@ import '../providers/transaction_provider.dart';
 import '../providers/gallon_provider.dart';
 
 class NewTransactionScreen extends StatefulWidget {
+  const NewTransactionScreen({super.key});
+
   @override
   _NewTransactionScreenState createState() => _NewTransactionScreenState();
 }
@@ -24,9 +26,16 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   bool _showScanner = false;
   bool _showManualEntry = false;
   bool _isProcessingQR = false;
+  bool _cameraReady = false;
   String _detectedQR = '';
+  DateTime? _lastScanTime;
   final _manualGallonCodeController = TextEditingController();
   MobileScannerController? _scannerController;
+  
+  // Scan cooldown duration
+  static const _scanCooldown = Duration(seconds: 2);
+  // Camera startup delay
+  static const _cameraStartupDelay = Duration(milliseconds: 1500);
 
   @override
   void initState() {
@@ -49,7 +58,23 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   }
 
   Future<void> _scanGallon() async {
-    setState(() => _showScanner = true);
+    // Dispose old controller and create new one
+    _scannerController?.dispose();
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+    );
+    
+    setState(() {
+      _showScanner = true;
+      _cameraReady = false;
+    });
+    
+    // Wait for camera to focus
+    await Future.delayed(_cameraStartupDelay);
+    
+    if (mounted && _showScanner) {
+      setState(() => _cameraReady = true);
+    }
   }
 
   // Extract gallon code from QR data
@@ -105,67 +130,127 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     return cleaned;
   }
 
-  void _onScanDetect(BarcodeCapture capture) async {
-    if (_showScanner && !_isProcessingQR && capture.barcodes.isNotEmpty) {
-      final rawValue = capture.barcodes.first.rawValue;
-      if (rawValue != null && rawValue.isNotEmpty) {
-        setState(() {
-          _isProcessingQR = true;
-          _detectedQR = rawValue;
-        });
-        
-        // Add delay for visual feedback
-        await Future.delayed(Duration(milliseconds: 500));
-        
-        // Extract gallon code from QR data
-        final gallonCode = _extractGallonCode(rawValue);
-        print('========================================');
-        print('QR SCAN DEBUG:');
-        print('Raw Value: "$rawValue"');
-        print('Extracted Code: "$gallonCode"');
-        print('Code Length: ${gallonCode.length}');
-        print('========================================');
-        
-        final gallonProvider = Provider.of<GallonProvider>(context, listen: false);
-        final result = await gallonProvider.scanGallon(gallonCode);
+  // Check if QR code is within the scanning frame
+  bool _isQRInFrame(Barcode barcode, Size imageSize) {
+    final corners = barcode.corners;
+    if (corners.isEmpty || imageSize.width == 0 || imageSize.height == 0) {
+      return true; // If no position data, allow scan
+    }
+    
+    // Calculate frame bounds (250x250 centered)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final frameSize = 250.0;
+    final frameCenterX = screenWidth / 2;
+    final frameCenterY = screenHeight / 2;
+    final frameLeft = frameCenterX - (frameSize / 2);
+    final frameRight = frameCenterX + (frameSize / 2);
+    final frameTop = frameCenterY - (frameSize / 2);
+    final frameBottom = frameCenterY + (frameSize / 2);
+    
+    // Check if QR code center is within frame
+    double qrCenterX = 0;
+    double qrCenterY = 0;
+    
+    for (var corner in corners) {
+      // Convert image coordinates to screen coordinates
+      final x = (corner.dx / imageSize.width) * screenWidth;
+      final y = (corner.dy / imageSize.height) * screenHeight;
+      qrCenterX += x;
+      qrCenterY += y;
+    }
+    
+    qrCenterX /= corners.length;
+    qrCenterY /= corners.length;
+    
+    // Check if center is within frame with some tolerance
+    final tolerance = 50.0; // Allow some margin
+    return qrCenterX >= (frameLeft - tolerance) && 
+           qrCenterX <= (frameRight + tolerance) &&
+           qrCenterY >= (frameTop - tolerance) && 
+           qrCenterY <= (frameBottom + tolerance);
+  }
 
-        if (result != null && result['exists'] == true) {
-          final gallon = result['gallon'];
-          
-          if (gallon['status'] == 'OUT') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gallon ${gallon['gallon_code']} is already OUT'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else {
-            final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-            transactionProvider.addGallon(gallonCode);
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gallon ${gallon['gallon_code']} added'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gallon not found'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+  void _onScanDetect(BarcodeCapture capture) async {
+    // Only scan when camera is ready
+    if (!_cameraReady || _showScanner == false || _isProcessingQR || capture.barcodes.isEmpty) {
+      return;
+    }
+    
+    // Check cooldown period
+    final now = DateTime.now();
+    if (_lastScanTime != null && now.difference(_lastScanTime!) < _scanCooldown) {
+      return; // Still in cooldown, ignore scan
+    }
+    
+    final barcode = capture.barcodes.first;
+    final rawValue = barcode.rawValue;
+    
+    if (rawValue == null || rawValue.isEmpty) return;
+    
+    // Check if QR code is within the frame bounds
+    if (!_isQRInFrame(barcode, capture.size)) {
+      return; // QR code is outside the frame, ignore it
+    }
+    
+    setState(() {
+      _isProcessingQR = true;
+      _detectedQR = rawValue;
+      _lastScanTime = now;
+    });
+    
+    // Add delay for visual feedback
+    await Future.delayed(Duration(milliseconds: 800));
+    
+    // Close scanner
+    setState(() => _showScanner = false);
+    
+    // Extract gallon code from QR data
+    final gallonCode = _extractGallonCode(rawValue);
+    print('========================================');
+    print('QR SCAN DEBUG:');
+    print('Raw Value: "$rawValue"');
+    print('Extracted Code: "$gallonCode"');
+    print('Code Length: ${gallonCode.length}');
+    print('========================================');
+    
+    final gallonProvider = Provider.of<GallonProvider>(context, listen: false);
+    final result = await gallonProvider.scanGallon(gallonCode);
+    
+    setState(() {
+      _isProcessingQR = false;
+      _detectedQR = '';
+      _cameraReady = false;
+    });
+
+    if (result != null && result['exists'] == true) {
+      final gallon = result['gallon'];
+      
+      if (gallon['status'] == 'OUT') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gallon ${gallon['gallon_code']} is already OUT'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+        transactionProvider.addGallon(gallonCode);
         
-        // Reset processing state to allow next scan
-        await Future.delayed(Duration(milliseconds: 800));
-        setState(() {
-          _isProcessingQR = false;
-          _detectedQR = '';
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gallon ${gallon['gallon_code']} added'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gallon not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -175,7 +260,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       
       if (transactionProvider.scannedGallons.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Please scan at least one gallon'),
             backgroundColor: Colors.red,
           ),
@@ -195,7 +280,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Transaction created successfully'),
             backgroundColor: Colors.green,
           ),
@@ -246,7 +331,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Gallon not found'),
           backgroundColor: Colors.red,
         ),
@@ -258,7 +343,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('New Transaction'),
+        title: const Text('New Transaction'),
       ),
       body: _showScanner 
           ? _buildScanner() 
@@ -272,6 +357,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   Widget _buildScanner() {
     return Stack(
       children: [
+        // Camera view
         MobileScanner(
           controller: _scannerController,
           onDetect: _onScanDetect,
@@ -280,15 +366,15 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  SizedBox(height: 16),
-                  Text(
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
                     'Camera not available',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       kIsWeb 
                         ? 'Please allow camera permissions in your browser'
@@ -297,7 +383,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -305,10 +391,10 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                         _showManualEntry = true;
                       });
                     },
-                    icon: Icon(Icons.keyboard),
-                    label: Text('Use Manual Entry Instead'),
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('Use Manual Entry Instead'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                   ),
                 ],
@@ -316,24 +402,138 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             );
           },
         ),
+        // Camera focusing indicator
+        if (!_cameraReady)
+          Container(
+            color: Colors.black87,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text(
+                    'Focusing camera...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // QR Scanner Frame Overlay
+        Center(
+          child: Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _isProcessingQR ? Colors.green : Colors.white,
+                width: 3,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Stack(
+              children: [
+                // Corner accents
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        left: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        right: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        left: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        right: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Dark overlay around frame
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Container(
+              color: Colors.black38,
+              child: Center(
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         Positioned(
           top: 16,
           left: 16,
           right: 16,
           child: Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Icon(Icons.qr_code_scanner, size: 48, color: Theme.of(context).primaryColor),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Scan QR Code on Gallon Container',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   if (kIsWeb) ...[
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Having trouble? Use manual entry below',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -353,7 +553,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             children: [
               if (kIsWeb)
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                   child: ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -361,21 +561,23 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                         _showManualEntry = true;
                       });
                     },
-                    icon: Icon(Icons.keyboard),
-                    label: Text('Enter Code Manually'),
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('Enter Code Manually'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       backgroundColor: Colors.blue,
                     ),
                   ),
                 ),
               ElevatedButton(
-                onPressed: () => setState(() => _showScanner = false),
+                onPressed: () {
+                  setState(() => _showScanner = false);
+                },
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   backgroundColor: Colors.red,
                 ),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
             ],
           ),
@@ -386,26 +588,26 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             color: Colors.black54,
             child: Center(
               child: Card(
-                margin: EdgeInsets.all(32),
+                margin: const EdgeInsets.all(32),
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle,
                         size: 64,
                         color: Colors.green,
                       ),
-                      SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: 16),
+                      const Text(
                         'QR Code Detected!',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         _detectedQR.length > 30 
                             ? '${_detectedQR.substring(0, 30)}...'
@@ -416,8 +618,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 16),
-                      CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(),
                     ],
                   ),
                 ),
@@ -430,25 +632,25 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
   Widget _buildManualEntry() {
     return Padding(
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.qr_code, size: 80, color: Theme.of(context).primaryColor),
-          SizedBox(height: 24),
-          Text(
+          const SizedBox(height: 24),
+          const Text(
             'Enter Gallon Code Manually',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Type the gallon ID from the QR code',
             style: TextStyle(color: Colors.grey[600]),
           ),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
           TextField(
             controller: _manualGallonCodeController,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Gallon Code',
               hintText: 'e.g., GAL001',
               border: OutlineInputBorder(),
@@ -458,7 +660,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             autofocus: true,
             onSubmitted: (value) => _processManualGallonEntry(value.trim()),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -467,23 +669,23 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                     _manualGallonCodeController.clear();
                     setState(() => _showManualEntry = false);
                   },
-                  child: Text('Cancel'),
                   style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: Text('Cancel'),
                 ),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () async {
                     final code = _manualGallonCodeController.text.trim();
                     await _processManualGallonEntry(code);
                   },
-                  child: Text('Add Gallon'),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: Text('Add Gallon'),
                 ),
               ),
             ],
@@ -495,7 +697,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
   Widget _buildForm() {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
         child: Column(
@@ -506,7 +708,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
               builder: (context, provider, _) {
                 return Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -515,29 +717,29 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                           children: [
                             Text(
                               'Scanned Gallons (${provider.scannedGallons.length})',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: _scanGallon,
-                                    icon: Icon(Icons.qr_code_scanner, size: 18),
-                                    label: Text('Scan'),
+                                    icon: const Icon(Icons.qr_code_scanner, size: 18),
+                                    label: const Text('Scan'),
                                     style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                     ),
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () => setState(() => _showManualEntry = true),
-                                    icon: Icon(Icons.keyboard, size: 18),
-                                    label: Text('Manual'),
+                                    icon: const Icon(Icons.keyboard, size: 18),
+                                    label: const Text('Manual'),
                                     style: OutlinedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                     ),
                                   ),
                                 ),
@@ -545,14 +747,14 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         if (provider.scannedGallons.isEmpty)
-                          Text('No gallons scanned yet', style: TextStyle(color: Colors.grey)),
+                          const Text('No gallons scanned yet', style: TextStyle(color: Colors.grey)),
                         ...provider.scannedGallons.map((code) => ListTile(
-                          leading: Icon(Icons.water_drop, color: Colors.blue),
+                          leading: const Icon(Icons.water_drop, color: Colors.blue),
                           title: Text(code),
                           trailing: IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
+                            icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () => provider.removeGallon(code),
                           ),
                         )),
@@ -562,12 +764,12 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 );
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Customer Name
             TextFormField(
               controller: _customerNameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Customer Name *',
                 prefixIcon: Icon(Icons.person),
               ),
@@ -578,27 +780,27 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 return null;
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Customer Phone
             TextFormField(
               controller: _customerPhoneController,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Customer Phone',
                 prefixIcon: Icon(Icons.phone),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Transaction Type
             DropdownButtonFormField<String>(
-              value: _transactionType,
-              decoration: InputDecoration(
+              initialValue: _transactionType,
+              decoration: const InputDecoration(
                 labelText: 'Transaction Type *',
                 prefixIcon: Icon(Icons.category),
               ),
-              items: [
+              items: const [
                 DropdownMenuItem(value: 'walk-in', child: Text('Walk-in')),
                 DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
                 DropdownMenuItem(value: 'refill-only', child: Text('Refill Only')),
@@ -607,14 +809,14 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 setState(() => _transactionType = value!);
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Customer Address (show only for delivery)
             if (_transactionType == 'delivery') ...[
               TextFormField(
                 controller: _customerAddressController,
                 maxLines: 2,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Delivery Address *',
                   prefixIcon: Icon(Icons.location_on),
                 ),
@@ -625,17 +827,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
             ],
 
             // Payment Method
             DropdownButtonFormField<String>(
-              value: _paymentMethod,
-              decoration: InputDecoration(
+              initialValue: _paymentMethod,
+              decoration: const InputDecoration(
                 labelText: 'Payment Method *',
                 prefixIcon: Icon(Icons.payment),
               ),
-              items: [
+              items: const [
                 DropdownMenuItem(value: 'cash', child: Text('Cash')),
                 DropdownMenuItem(value: 'gcash', child: Text('GCash')),
                 DropdownMenuItem(value: 'card', child: Text('Card')),
@@ -645,13 +847,13 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 setState(() => _paymentMethod = value!);
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Unit Price
             TextFormField(
               controller: _unitPriceController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
                 labelText: 'Unit Price (₱) *',
                 prefixIcon: Icon(Icons.attach_money),
               ),
@@ -665,18 +867,18 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 return null;
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Notes
             TextFormField(
               controller: _notesController,
               maxLines: 3,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Notes',
                 prefixIcon: Icon(Icons.note),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Total Display
             Consumer<TransactionProvider>(
@@ -688,11 +890,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 return Card(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        const Text(
                           'Total Amount',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
@@ -721,19 +923,19 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       builder: (context, provider, _) {
         if (provider.isLoading) {
           return Container(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
+            padding: const EdgeInsets.all(16),
+            child: const Center(child: CircularProgressIndicator()),
           );
         }
 
         return Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: ElevatedButton(
             onPressed: _submitTransaction,
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            child: Text(
+            child: const Text(
               'CREATE TRANSACTION',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),

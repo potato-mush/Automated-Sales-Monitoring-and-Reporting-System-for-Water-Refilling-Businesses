@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 
 class DailySummaryScreen extends StatefulWidget {
+  const DailySummaryScreen({super.key});
+
   @override
   _DailySummaryScreenState createState() => _DailySummaryScreenState();
 }
@@ -24,10 +26,10 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Daily Summary'),
+        title: const Text('Daily Summary'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadData,
           ),
         ],
@@ -35,7 +37,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
       body: Consumer<TransactionProvider>(
         builder: (context, provider, _) {
           if (provider.todaySummary == null) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final summary = provider.todaySummary!;
@@ -45,8 +47,8 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
           return RefreshIndicator(
             onRefresh: _loadData,
             child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -54,15 +56,15 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                   Card(
                     color: Theme.of(context).primaryColor,
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 48, color: Colors.white),
-                          SizedBox(width: 16),
+                          const Icon(Icons.calendar_today, size: 48, color: Colors.white),
+                          const SizedBox(width: 16),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Today\'s Summary',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -71,7 +73,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                               ),
                               Text(
                                 DateFormat('EEEE, MMMM d, y').format(DateTime.now()),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -83,17 +85,17 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // Overall Stats
-                  Text(
+                  const Text(
                     'Overall Statistics',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   Row(
                     children: [
@@ -105,7 +107,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                           Colors.blue,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildStatCard(
                           'Gallons',
@@ -116,16 +118,16 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   Card(
                     color: Colors.green[50],
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             'Total Revenue',
                             style: TextStyle(
                               fontSize: 18,
@@ -144,17 +146,17 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // By Transaction Type
-                  Text(
+                  const Text(
                     'By Transaction Type',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildTypeCard(
                     'Walk-in',
@@ -163,7 +165,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                     Icons.store,
                     Colors.blue,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
                   _buildTypeCard(
                     'Delivery',
@@ -172,7 +174,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                     Icons.delivery_dining,
                     Colors.orange,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
                   _buildTypeCard(
                     'Refill Only',
@@ -181,17 +183,17 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                     Icons.autorenew,
                     Colors.green,
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // By Payment Method
-                  Text(
+                  const Text(
                     'By Payment Method',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildPaymentCard('Cash', byType['cash'] ?? 0.0, Icons.money),
                   _buildPaymentCard('GCash', byPayment['gcash'] ?? 0.0, Icons.phone_android),
@@ -209,19 +211,19 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Icon(icon, size: 32, color: color),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               title,
               style: TextStyle(
@@ -240,25 +242,25 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
     
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -296,7 +298,7 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
         title: Text(method),
         trailing: Text(
           '₱${amountValue.toStringAsFixed(2)}',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),

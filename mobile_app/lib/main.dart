@@ -39,10 +39,10 @@ class MyApp extends StatelessWidget {
   final SharedPreferences prefs;
 
   const MyApp({
-    Key? key, 
+    super.key, 
     required this.apiService, 
     required this.prefs
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,14 +63,14 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
-          primaryColor: Color(0xFF1E88E5),
+          primaryColor: const Color(0xFF1E88E5),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF1E88E5),
-            primary: Color(0xFF1E88E5),
-            secondary: Color(0xFF26A69A),
+            seedColor: const Color(0xFF1E88E5),
+            primary: const Color(0xFF1E88E5),
+            secondary: const Color(0xFF26A69A),
           ),
           scaffoldBackgroundColor: Colors.grey[50],
-          appBarTheme: AppBarTheme(
+          appBarTheme: const AppBarTheme(
             backgroundColor: Color(0xFF1E88E5),
             foregroundColor: Colors.white,
             elevation: 0,
@@ -84,9 +84,9 @@ class MyApp extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF1E88E5),
+              backgroundColor: const Color(0xFF1E88E5),
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

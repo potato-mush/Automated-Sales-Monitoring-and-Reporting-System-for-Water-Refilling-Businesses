@@ -6,6 +6,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/gallon_provider.dart';
 
 class ReturnGallonScreen extends StatefulWidget {
+  const ReturnGallonScreen({super.key});
+
   @override
   _ReturnGallonScreenState createState() => _ReturnGallonScreenState();
 }
@@ -14,9 +16,16 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   bool _showScanner = false;
   bool _showManualEntry = false;
   bool _isProcessingQR = false;
+  bool _cameraReady = false;
   String _detectedQR = '';
+  DateTime? _lastScanTime;
   final TextEditingController _manualCodeController = TextEditingController();
   MobileScannerController? _scannerController;
+  
+  // Scan cooldown duration
+  static const _scanCooldown = Duration(seconds: 2);
+  // Camera startup delay
+  static const _cameraStartupDelay = Duration(milliseconds: 1500);
 
   @override
   void initState() {
@@ -34,36 +43,55 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   }
 
   void _onScanDetect(BarcodeCapture capture) async {
-    if (_showScanner && !_isProcessingQR && capture.barcodes.isNotEmpty) {
-      final rawValue = capture.barcodes.first.rawValue;
-      if (rawValue != null && rawValue.isNotEmpty) {
-        setState(() {
-          _isProcessingQR = true;
-          _detectedQR = rawValue;
-        });
-        
-        // Add delay for visual feedback
-        await Future.delayed(Duration(milliseconds: 500));
-        
-        // Extract gallon code from QR data
-        final gallonCode = _extractGallonCode(rawValue);
-        print('========================================');
-        print('QR SCAN DEBUG:');
-        print('Raw Value: "$rawValue"');
-        print('Extracted Code: "$gallonCode"');
-        print('Code Length: ${gallonCode.length}');
-        print('========================================');
-        
-        await _processGallonReturn(gallonCode);
-        
-        // Reset processing state to allow next scan
-        await Future.delayed(Duration(milliseconds: 800));
-        setState(() {
-          _isProcessingQR = false;
-          _detectedQR = '';
-        });
-      }
+    // Only scan when camera is ready
+    if (!_cameraReady || _showScanner == false || _isProcessingQR || capture.barcodes.isEmpty) {
+      return;
     }
+    
+    // Check cooldown period
+    final now = DateTime.now();
+    if (_lastScanTime != null && now.difference(_lastScanTime!) < _scanCooldown) {
+      return; // Still in cooldown, ignore scan
+    }
+    
+    final barcode = capture.barcodes.first;
+    final rawValue = barcode.rawValue;
+    
+    if (rawValue == null || rawValue.isEmpty) return;
+    
+    // Check if QR code is within the frame bounds
+    if (!_isQRInFrame(barcode, capture.size)) {
+      return; // QR code is outside the frame, ignore it
+    }
+    
+    setState(() {
+      _isProcessingQR = true;
+      _detectedQR = rawValue;
+      _lastScanTime = now;
+    });
+    
+    // Add delay for visual feedback
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    // Extract gallon code from QR data
+    final gallonCode = _extractGallonCode(rawValue);
+    print('========================================');
+    print('QR SCAN DEBUG:');
+    print('Raw Value: "$rawValue"');
+    print('Extracted Code: "$gallonCode"');
+    print('Code Length: ${gallonCode.length}');
+    print('========================================');
+    
+    // Close scanner before showing dialog
+    setState(() {
+      _showScanner = false;
+      _isProcessingQR = false;
+      _detectedQR = '';
+      _cameraReady = false;
+    });
+    
+    // Process the return after closing scanner
+    await _processGallonReturn(gallonCode);
   }
 
   // Extract gallon code from QR data
@@ -119,20 +147,61 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
     return cleaned;
   }
 
+  // Check if QR code is within the scanning frame
+  bool _isQRInFrame(Barcode barcode, Size imageSize) {
+    final corners = barcode.corners;
+    if (corners.isEmpty || imageSize.width == 0 || imageSize.height == 0) {
+      return true; // If no position data, allow scan
+    }
+    
+    // Calculate frame bounds (250x250 centered)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final frameSize = 250.0;
+    final frameCenterX = screenWidth / 2;
+    final frameCenterY = screenHeight / 2;
+    final frameLeft = frameCenterX - (frameSize / 2);
+    final frameRight = frameCenterX + (frameSize / 2);
+    final frameTop = frameCenterY - (frameSize / 2);
+    final frameBottom = frameCenterY + (frameSize / 2);
+    
+    // Check if QR code center is within frame
+    double qrCenterX = 0;
+    double qrCenterY = 0;
+    
+    for (var corner in corners) {
+      // Convert image coordinates to screen coordinates
+      final x = (corner.dx / imageSize.width) * screenWidth;
+      final y = (corner.dy / imageSize.height) * screenHeight;
+      qrCenterX += x;
+      qrCenterY += y;
+    }
+    
+    qrCenterX /= corners.length;
+    qrCenterY /= corners.length;
+    
+    // Check if center is within frame with some tolerance
+    final tolerance = 50.0; // Allow some margin
+    return qrCenterX >= (frameLeft - tolerance) && 
+           qrCenterX <= (frameRight + tolerance) &&
+           qrCenterY >= (frameTop - tolerance) && 
+           qrCenterY <= (frameBottom + tolerance);
+  }
+
   Future<void> _processGallonReturn(String gallonCode) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Return Gallon'),
+        title: const Text('Return Gallon'),
         content: Text('Return gallon $gallonCode?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Confirm'),
+            child: const Text('Confirm'),
           ),
         ],
       ),
@@ -143,10 +212,6 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
       final success = await gallonProvider.returnGallon(gallonCode);
 
       if (success && mounted) {
-        setState(() {
-          _showManualEntry = false;
-          _manualCodeController.clear();
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gallon $gallonCode returned successfully'),
@@ -161,7 +226,10 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
           ),
         );
       }
-    } else if (mounted) {
+    }
+    
+    // Always clear manual entry after processing
+    if (mounted) {
       setState(() {
         _showManualEntry = false;
         _manualCodeController.clear();
@@ -173,7 +241,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Return Gallon'),
+        title: const Text('Return Gallon'),
       ),
       body: _showScanner 
           ? _buildScanner() 
@@ -186,15 +254,33 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
           FloatingActionButton(
             heroTag: 'manual',
             onPressed: () => setState(() => _showManualEntry = true),
-            child: Icon(Icons.keyboard),
             backgroundColor: Colors.orange,
+            child: Icon(Icons.keyboard),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           FloatingActionButton.extended(
             heroTag: 'scan',
-            onPressed: () => setState(() => _showScanner = true),
-            icon: Icon(Icons.qr_code_scanner),
-            label: Text('Scan QR'),
+            onPressed: () async {
+              // Dispose old controller and create new one
+              _scannerController?.dispose();
+              _scannerController = MobileScannerController(
+                detectionSpeed: DetectionSpeed.normal,
+              );
+              
+              setState(() {
+                _showScanner = true;
+                _cameraReady = false;
+              });
+              
+              // Wait for camera to focus
+              await Future.delayed(_cameraStartupDelay);
+              
+              if (mounted && _showScanner) {
+                setState(() => _cameraReady = true);
+              }
+            },
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Scan QR'),
           ),
         ],
       ),
@@ -204,6 +290,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   Widget _buildScanner() {
     return Stack(
       children: [
+        // Camera view
         MobileScanner(
           controller: _scannerController,
           onDetect: _onScanDetect,
@@ -212,15 +299,15 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  SizedBox(height: 16),
-                  Text(
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
                     'Camera not available',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       kIsWeb 
                         ? 'Please allow camera permissions in your browser'
@@ -229,7 +316,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -237,10 +324,10 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                         _showManualEntry = true;
                       });
                     },
-                    icon: Icon(Icons.keyboard),
-                    label: Text('Use Manual Entry Instead'),
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('Use Manual Entry Instead'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                   ),
                 ],
@@ -248,24 +335,138 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
             );
           },
         ),
+        // Camera focusing indicator
+        if (!_cameraReady)
+          Container(
+            color: Colors.black87,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Focusing camera...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // QR Scanner Frame Overlay
+        Center(
+          child: Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _isProcessingQR ? Colors.green : Colors.white,
+                width: 3,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Stack(
+              children: [
+                // Corner accents
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        left: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        right: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        left: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                        right: BorderSide(color: _isProcessingQR ? Colors.green : Colors.blue, width: 5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Dark overlay around frame
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Container(
+              color: Colors.black38,
+              child: Center(
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         Positioned(
           top: 16,
           left: 16,
           right: 16,
           child: Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Icon(Icons.qr_code_scanner, size: 48, color: Theme.of(context).primaryColor),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Scan QR Code to Return Gallon',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   if (kIsWeb) ...[
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Having trouble? Use manual entry below',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -285,7 +486,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
             children: [
               if (kIsWeb)
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                   child: ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -293,21 +494,23 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                         _showManualEntry = true;
                       });
                     },
-                    icon: Icon(Icons.keyboard),
-                    label: Text('Enter Code Manually'),
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('Enter Code Manually'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       backgroundColor: Colors.blue,
                     ),
                   ),
                 ),
               ElevatedButton(
-                onPressed: () => setState(() => _showScanner = false),
+                onPressed: () {
+                  setState(() => _showScanner = false);
+                },
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   backgroundColor: Colors.red,
                 ),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
             ],
           ),
@@ -318,26 +521,26 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
             color: Colors.black54,
             child: Center(
               child: Card(
-                margin: EdgeInsets.all(32),
+                margin: const EdgeInsets.all(32),
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle,
                         size: 64,
                         color: Colors.green,
                       ),
-                      SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: 16),
+                      const Text(
                         'QR Code Detected!',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         _detectedQR.length > 30 
                             ? '${_detectedQR.substring(0, 30)}...'
@@ -348,8 +551,8 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 16),
-                      CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(),
                     ],
                   ),
                 ),
@@ -362,25 +565,25 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
 
   Widget _buildManualEntry() {
     return Padding(
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.qr_code, size: 80, color: Theme.of(context).primaryColor),
-          SizedBox(height: 24),
-          Text(
+          const SizedBox(height: 24),
+          const Text(
             'Enter Gallon Code Manually',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Type the gallon ID from the QR code',
             style: TextStyle(color: Colors.grey[600]),
           ),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
           TextField(
             controller: _manualCodeController,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Gallon Code',
               hintText: 'e.g., GAL001',
               border: OutlineInputBorder(),
@@ -389,7 +592,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
             textCapitalization: TextCapitalization.characters,
             autofocus: true,
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -398,13 +601,13 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                     _manualCodeController.clear();
                     setState(() => _showManualEntry = false);
                   },
-                  child: Text('Cancel'),
                   style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: Text('Cancel'),
                 ),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () async {
@@ -413,10 +616,10 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                       await _processGallonReturn(code);
                     }
                   },
-                  child: Text('Submit'),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: Text('Submit'),
                 ),
               ),
             ],
@@ -430,13 +633,13 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
     return Consumer<GallonProvider>(
       builder: (context, provider, _) {
         return SingleChildScrollView(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue[50],
-                child: Padding(
+                child: const Padding(
                   padding: EdgeInsets.all(16),
                   child: Column(
                     children: [
@@ -461,18 +664,18 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
               // Gallon Status Summary
               if (provider.statusSummary != null) ...[
-                Text(
+                const Text(
                   'Current Status',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -482,7 +685,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                         Colors.green,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _buildStatusCard(
                         'Out',
@@ -492,7 +695,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -502,7 +705,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                         Colors.red,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _buildStatusCard(
                         'Missing',
@@ -513,7 +716,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                   ],
                 ),
               ],
-              SizedBox(height: 80), // Space for FAB
+              const SizedBox(height: 80), // Space for FAB
             ],
           ),
         );
@@ -524,7 +727,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
   Widget _buildStatusCard(String title, String value, Color color) {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Text(
@@ -535,7 +738,7 @@ class _ReturnGallonScreenState extends State<ReturnGallonScreen> {
                 color: color,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               title,
               textAlign: TextAlign.center,

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/gallon_provider.dart';
 
 class InventoryScreen extends StatefulWidget {
+  const InventoryScreen({super.key});
+
   @override
   _InventoryScreenState createState() => _InventoryScreenState();
 }
@@ -23,10 +25,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Inventory'),
+        title: const Text('Inventory'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadData,
           ),
         ],
@@ -34,7 +36,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       body: Consumer<GallonProvider>(
         builder: (context, provider, _) {
           if (provider.statusSummary == null) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final summary = provider.statusSummary!;
@@ -42,8 +44,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
           return RefreshIndicator(
             onRefresh: _loadData,
             child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -51,16 +53,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   Card(
                     color: Theme.of(context).primaryColor,
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.water_drop, size: 48, color: Colors.white),
-                          SizedBox(width: 16),
+                          const Icon(Icons.water_drop, size: 48, color: Colors.white),
+                          const SizedBox(width: 16),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Total Gallons',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -69,7 +71,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               ),
                               Text(
                                 '${summary['total']}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 36,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -81,17 +83,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // Status Breakdown
-                  Text(
+                  const Text(
                     'Status Breakdown',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildStatusItem(
                     'In Station',
@@ -100,7 +102,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icons.home,
                     Colors.green,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildStatusItem(
                     'Out (Borrowed)',
@@ -109,7 +111,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icons.exit_to_app,
                     Colors.orange,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildStatusItem(
                     'Overdue',
@@ -118,7 +120,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icons.warning,
                     Colors.red,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   _buildStatusItem(
                     'Missing',
@@ -127,42 +129,42 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icons.error,
                     Colors.grey[700]!,
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // Alerts
                   if (summary['overdue'] > 0 || summary['missing'] > 0) ...[
-                    Text(
+                    const Text(
                       'Alerts',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
                     if (summary['overdue'] > 0)
                       Card(
                         color: Colors.orange[50],
                         child: ListTile(
-                          leading: Icon(Icons.warning, color: Colors.orange),
-                          title: Text('Overdue Gallons'),
+                          leading: const Icon(Icons.warning, color: Colors.orange),
+                          title: const Text('Overdue Gallons'),
                           subtitle: Text('${summary['overdue']} gallon(s) are overdue for return'),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () {
                             // Navigate to overdue list
                           },
                         ),
                       ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
                     if (summary['missing'] > 0)
                       Card(
                         color: Colors.red[50],
                         child: ListTile(
-                          leading: Icon(Icons.error, color: Colors.red),
-                          title: Text('Missing Gallons'),
+                          leading: const Icon(Icons.error, color: Colors.red),
+                          title: const Text('Missing Gallons'),
                           subtitle: Text('${summary['missing']} gallon(s) marked as missing'),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () {
                             // Navigate to missing list
                           },
@@ -189,32 +191,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 32),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         '$count gallons ($percentage%)',
                         style: TextStyle(
@@ -235,7 +237,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             LinearProgressIndicator(
               value: total > 0 ? count / total : 0,
               backgroundColor: Colors.grey[200],
