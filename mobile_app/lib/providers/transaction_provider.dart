@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 class TransactionProvider with ChangeNotifier {
   final ApiService apiService;
   
-  List<String> _scannedGallons = [];
+  final List<String> _scannedGallons = [];
   bool _isLoading = false;
   String? _error;
   Map<String, dynamic>? _todaySummary;
@@ -39,7 +39,6 @@ class TransactionProvider with ChangeNotifier {
     String? customerAddress,
     required String transactionType,
     required String paymentMethod,
-    required double unitPrice,
     String? notes,
   }) async {
     if (_scannedGallons.isEmpty) {
@@ -59,7 +58,6 @@ class TransactionProvider with ChangeNotifier {
         'customer_address': customerAddress,
         'transaction_type': transactionType,
         'payment_method': paymentMethod,
-        'unit_price': unitPrice,
         'gallon_codes': _scannedGallons,
         'notes': notes,
       };

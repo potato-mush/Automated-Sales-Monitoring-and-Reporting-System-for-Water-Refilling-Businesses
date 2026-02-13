@@ -155,6 +155,7 @@ class LogController extends Controller
             ], 422);
         }
 
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         // Verify password
@@ -171,43 +172,17 @@ class LogController extends Controller
             ], 403);
         }
 
-        DB::beginTransaction();
-
         try {
             $count = SystemLog::count();
-            SystemLog::truncate();
-
-            // Log this action
-            SystemLog::logActivity(
-                $user,
-                'logout',
-                $request,
-                'web'
-            );
-
-            // Immediately create a log entry for clearing logs
-            DB::table('system_logs')->insert([
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'user_email' => $user->email,
-                'user_role' => $user->role,
-                'action' => 'login',
-                'platform' => 'web',
-                'device' => 'System Action',
-                'ip_address' => $request->ip(),
-                'user_agent' => 'System logs cleared by admin',
-                'created_at' => now(),
-            ]);
-
-            DB::commit();
+            
+            // Delete all logs
+            SystemLog::query()->delete();
 
             return response()->json([
                 'message' => 'System logs cleared successfully',
                 'deleted_count' => $count
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-            
             return response()->json([
                 'message' => 'Failed to clear system logs',
                 'error' => $e->getMessage()

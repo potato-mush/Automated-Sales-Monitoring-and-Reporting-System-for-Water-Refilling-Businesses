@@ -1565,3 +1565,15 @@
 #3 C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/artisan(35): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
 #4 {main}
 "} 
+[2026-02-13 18:16:54] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0054","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0054"}} 
+[2026-02-13 18:16:54] local.INFO: Gallon found {"gallon_code":"WR-GAL-0054"} 
+[2026-02-13 18:17:03] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0054","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0054"}} 
+[2026-02-13 18:17:03] local.INFO: Gallon found {"gallon_code":"WR-GAL-0054"} 
+[2026-02-13 18:39:39] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0052","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0052"}} 
+[2026-02-13 18:39:39] local.INFO: Gallon found {"gallon_code":"WR-GAL-0052"} 
+[2026-02-13 18:39:46] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0052","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0052"}} 
+[2026-02-13 18:39:46] local.INFO: Gallon found {"gallon_code":"WR-GAL-0052"} 
+[2026-02-13 18:39:56] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0051","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0051"}} 
+[2026-02-13 18:39:56] local.INFO: Gallon found {"gallon_code":"WR-GAL-0051"} 
+[2026-02-13 18:40:29] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0053","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0053"}} 
+[2026-02-13 18:40:29] local.INFO: Gallon found {"gallon_code":"WR-GAL-0053"} 

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/gallon_provider.dart';
+import '../services/api_service.dart';
 
 class NewTransactionScreen extends StatefulWidget {
   const NewTransactionScreen({super.key});
@@ -18,7 +19,6 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _customerAddressController = TextEditingController();
-  final _unitPriceController = TextEditingController(text: '25.00');
   final _notesController = TextEditingController();
 
   String _transactionType = 'walk-in';
@@ -32,6 +32,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   final _manualGallonCodeController = TextEditingController();
   MobileScannerController? _scannerController;
   
+  // System settings
+  double _gallonPrice = 25.00;
+  double _deliveryFee = 50.00;
+  bool _isLoadingSettings = true;
+  
   // Scan cooldown duration
   static const _scanCooldown = Duration(seconds: 2);
   // Camera startup delay
@@ -43,6 +48,35 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     _scannerController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
     );
+    _loadSystemSettings();
+  }
+
+  Future<void> _loadSystemSettings() async {
+    try {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final settings = await apiService.getSettings();
+      
+      if (mounted) {
+        setState(() {
+          _gallonPrice = double.tryParse(settings['gallon_price']?.toString() ?? '25.00') ?? 25.00;
+          _deliveryFee = double.tryParse(settings['delivery_fee']?.toString() ?? '50.00') ?? 50.00;
+          _isLoadingSettings = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading settings: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingSettings = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load settings, using defaults'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -51,7 +85,6 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _customerAddressController.dispose();
-    _unitPriceController.dispose();
     _notesController.dispose();
     _manualGallonCodeController.dispose();
     super.dispose();
@@ -274,7 +307,6 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         customerAddress: _customerAddressController.text.trim(),
         transactionType: _transactionType,
         paymentMethod: _paymentMethod,
-        unitPrice: double.parse(_unitPriceController.text),
         notes: _notesController.text.trim(),
       );
 
@@ -849,23 +881,69 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Unit Price
-            TextFormField(
-              controller: _unitPriceController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Unit Price (₱) *',
-                prefixIcon: Icon(Icons.attach_money),
+            // Pricing Information (Read-only)
+            Card(
+              color: Colors.blue.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pricing Information',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Gallon Price:'),
+                        Text(
+                          '₱${_gallonPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    if (_transactionType == 'delivery') ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Delivery Fee (per gallon):'),
+                          Text(
+                            '₱${_deliveryFee.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Price per Gallon:'),
+                          Text(
+                            '₱${(_gallonPrice + _deliveryFee).toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter unit price';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid price';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
 
@@ -884,28 +962,52 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             Consumer<TransactionProvider>(
               builder: (context, provider, _) {
                 final quantity = provider.scannedGallons.length;
-                final unitPrice = double.tryParse(_unitPriceController.text) ?? 0;
-                final total = quantity * unitPrice;
+                double total;
+                
+                // Calculate total based on transaction type
+                if (_transactionType == 'delivery') {
+                  // For delivery: (gallon_price + delivery_fee) × quantity
+                  total = quantity * (_gallonPrice + _deliveryFee);
+                } else {
+                  // For walk-in and refill-only: gallon_price × quantity
+                  total = quantity * _gallonPrice;
+                }
 
                 return Card(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        const Text(
-                          'Total Amount',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Amount',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '₱${total.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '₱${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
+                        if (quantity > 0) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _transactionType == 'delivery'
+                                ? '$quantity gallon(s) × ₱${(_gallonPrice + _deliveryFee).toStringAsFixed(2)}'
+                                : '$quantity gallon(s) × ₱${_gallonPrice.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

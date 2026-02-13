@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Gallon;
 use App\Models\GallonLog;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -59,7 +60,6 @@ class TransactionController extends Controller
             'customer_address' => 'nullable|string',
             'transaction_type' => 'required|in:walk-in,delivery,refill-only',
             'payment_method' => 'required|in:cash,gcash,card,bank-transfer',
-            'unit_price' => 'required|numeric|min:0',
             'gallon_codes' => 'required|array|min:1',
             'gallon_codes.*' => 'required|string',
             'notes' => 'nullable|string',
@@ -75,6 +75,10 @@ class TransactionController extends Controller
         DB::beginTransaction();
 
         try {
+            // Get system settings for pricing
+            $gallonPrice = floatval(SystemSetting::get('gallon_price', '25.00'));
+            $deliveryFee = floatval(SystemSetting::get('delivery_fee', '50.00'));
+            
             // Validate gallons exist and are available
             $gallons = Gallon::whereIn('gallon_code', $request->gallon_codes)->get();
 
@@ -93,6 +97,20 @@ class TransactionController extends Controller
                 ], 422);
             }
 
+            $quantity = count($request->gallon_codes);
+            
+            // Calculate pricing based on transaction type
+            // Delivery fee is calculated PER GALLON as requested
+            if ($request->transaction_type === 'delivery') {
+                // For delivery: (gallon_price + delivery_fee) per gallon
+                $unitPrice = $gallonPrice + $deliveryFee;
+                $totalAmount = $quantity * $unitPrice;
+            } else {
+                // For walk-in and refill-only: just gallon_price
+                $unitPrice = $gallonPrice;
+                $totalAmount = $quantity * $gallonPrice;
+            }
+
             // Create transaction
             $transaction = Transaction::create([
                 'transaction_code' => Transaction::generateTransactionCode(),
@@ -101,9 +119,9 @@ class TransactionController extends Controller
                 'customer_address' => $request->customer_address,
                 'transaction_type' => $request->transaction_type,
                 'payment_method' => $request->payment_method,
-                'quantity' => count($request->gallon_codes),
-                'unit_price' => $request->unit_price,
-                'total_amount' => count($request->gallon_codes) * $request->unit_price,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total_amount' => $totalAmount,
                 'employee_id' => auth()->id(),
                 'notes' => $request->notes,
             ]);
