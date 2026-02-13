@@ -114,6 +114,7 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request)
     {
+        /** @var User $user */
         $user = auth()->user();
 
         $request->validate([
@@ -121,10 +122,9 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
         ]);
 
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->save();
 
         return response()->json([
             'message' => 'Profile updated successfully',
@@ -142,6 +142,7 @@ class AuthController extends Controller
      */
     public function changePassword(Request $request)
     {
+        /** @var User $user */
         $user = auth()->user();
 
         $request->validate([
@@ -155,9 +156,8 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->update([
-            'password' => Hash::make($request->new_password),
-        ]);
+        $user->password = Hash::make($request->new_password);
+        $user->save();
 
         return response()->json([
             'message' => 'Password changed successfully'
