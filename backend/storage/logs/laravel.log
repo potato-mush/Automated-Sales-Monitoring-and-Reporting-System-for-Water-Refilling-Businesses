@@ -1545,3 +1545,23 @@
 [2026-02-11 23:54:17] local.INFO: Gallon found {"gallon_code":"WR-GAL-0053"} 
 [2026-02-11 23:54:28] local.INFO: Gallon Scan Request {"gallon_code":"WR-GAL-0052","code_length":11,"raw_input":{"gallon_code":"WR-GAL-0052"}} 
 [2026-02-11 23:54:28] local.INFO: Gallon found {"gallon_code":"WR-GAL-0052"} 
+[2026-02-13 16:36:22] local.ERROR: Declaration of App\Models\SystemSetting::all() must be compatible with Illuminate\Database\Eloquent\Model::all($columns = [...]) {"userId":1,"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Declaration of App\\Models\\SystemSetting::all() must be compatible with Illuminate\\Database\\Eloquent\\Model::all($columns = [...]) at C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/app/Models/SystemSetting.php:40)
+[stacktrace]
+#0 {main}
+"} 
+[2026-02-13 16:36:25] local.ERROR: Declaration of App\Models\SystemSetting::all() must be compatible with Illuminate\Database\Eloquent\Model::all($columns = [...]) {"userId":1,"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Declaration of App\\Models\\SystemSetting::all() must be compatible with Illuminate\\Database\\Eloquent\\Model::all($columns = [...]) at C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/app/Models/SystemSetting.php:40)
+[stacktrace]
+#0 {main}
+"} 
+[2026-02-13 16:37:36] local.ERROR: Declaration of App\Models\SystemSetting::all() must be compatible with Illuminate\Database\Eloquent\Model::all($columns = [...]) {"userId":1,"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Declaration of App\\Models\\SystemSetting::all() must be compatible with Illuminate\\Database\\Eloquent\\Model::all($columns = [...]) at C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/app/Models/SystemSetting.php:40)
+[stacktrace]
+#0 {main}
+"} 
+[2026-02-13 16:42:12] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/vendor/symfony/console/Application.php:745)
+[stacktrace]
+#0 C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/vendor/symfony/console/Application.php(266): Symfony/Component/Console/Application->find('tinker')
+#1 C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/vendor/symfony/console/Application.php(175): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#2 C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(201): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#3 C:/Users/DarkNight_007/Downloads/Automated-Sales-Monitoring-and-Reporting-System-for-Water-Refilling-Businesses/backend/artisan(35): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#4 {main}
+"} 

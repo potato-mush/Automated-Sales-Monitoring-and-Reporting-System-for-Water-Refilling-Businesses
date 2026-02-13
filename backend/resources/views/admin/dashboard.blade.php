@@ -64,6 +64,7 @@
                 <h5 class="mb-0">Sales Trend</h5>
                 <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-outline-primary active" id="btnDaily" onclick="changePeriod('daily')">Daily</button>
+                    <button type="button" class="btn btn-outline-primary" id="btnWeekly" onclick="changePeriod('weekly')">Weekly</button>
                     <button type="button" class="btn btn-outline-primary" id="btnMonthly" onclick="changePeriod('month')">Monthly</button>
                     <button type="button" class="btn btn-outline-primary" id="btnYearly" onclick="changePeriod('year')">Yearly</button>
                 </div>
@@ -181,11 +182,14 @@
         
         // Update button states
         document.getElementById('btnDaily').classList.remove('active');
+        document.getElementById('btnWeekly').classList.remove('active');
         document.getElementById('btnMonthly').classList.remove('active');
         document.getElementById('btnYearly').classList.remove('active');
         
         if (period === 'daily') {
             document.getElementById('btnDaily').classList.add('active');
+        } else if (period === 'weekly') {
+            document.getElementById('btnWeekly').classList.add('active');
         } else if (period === 'month') {
             document.getElementById('btnMonthly').classList.add('active');
         } else if (period === 'year') {

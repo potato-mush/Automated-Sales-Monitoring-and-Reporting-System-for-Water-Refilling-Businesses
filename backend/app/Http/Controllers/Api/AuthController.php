@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\SystemLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -37,6 +38,12 @@ class AuthController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
+        // Determine platform (mobile or web)
+        $platform = $request->header('X-Platform', 'web');
+        
+        // Log the login activity
+        SystemLog::logActivity($user, 'login', $request, $platform);
+
         return response()->json([
             'message' => 'Login successful',
             'user' => [
@@ -53,8 +60,18 @@ class AuthController extends Controller
     /**
      * Logout user (invalidate token)
      */
-    public function logout()
+    public function logout(Request $request)
     {
+        $user = auth()->user();
+        
+        // Determine platform (mobile or web)
+        $platform = $request->header('X-Platform', 'web');
+        
+        // Log the logout activity
+        if ($user) {
+            SystemLog::logActivity($user, 'logout', $request, $platform);
+        }
+        
         JWTAuth::invalidate(JWTAuth::getToken());
 
         return response()->json([

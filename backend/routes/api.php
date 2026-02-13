@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\GallonController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\LogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +85,22 @@ Route::middleware('auth:web,api')->group(function () {
         Route::put('/{id}', [EmployeeController::class, 'update']);
         Route::delete('/{id}', [EmployeeController::class, 'destroy']);
         Route::post('/{id}/toggle-status', [EmployeeController::class, 'toggleStatus']);
+    });
+
+    // Settings routes
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [SettingsController::class, 'index']);
+        Route::put('/', [SettingsController::class, 'update']);
+        Route::get('/{key}', [SettingsController::class, 'show']);
+        Route::put('/{key}', [SettingsController::class, 'updateSingle']);
+    });
+
+    // System Logs routes
+    Route::prefix('logs')->group(function () {
+        Route::get('/', [LogController::class, 'index']);
+        Route::get('/statistics', [LogController::class, 'statistics']);
+        Route::get('/export', [LogController::class, 'export']);
+        Route::post('/clear', [LogController::class, 'clear']);
     });
 });
 

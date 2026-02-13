@@ -46,33 +46,51 @@
                 <h5 class="mb-0"><i class="bi bi-building me-2"></i>Business Settings</h5>
             </div>
             <div class="card-body">
-                <form id="businessSettingsForm">
+                <form id="businessSettingsForm" onsubmit="updateBusinessSettings(event)">
+                    @csrf
                     <div class="mb-3">
                         <label class="form-label">Business Name</label>
-                        <input type="text" class="form-control" value="Water Refilling Station" readonly>
-                        <small class="text-muted">Contact administrator to change business settings</small>
+                        <input type="text" class="form-control" id="businessName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Business Address</label>
+                        <textarea class="form-control" id="businessAddress" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Business Phone</label>
+                        <input type="text" class="form-control" id="businessPhone">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Slim Gallon Price</label>
+                            <label class="form-label">Gallon Price</label>
                             <div class="input-group">
                                 <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" value="25.00" readonly>
+                                <input type="number" step="0.01" min="0" class="form-control" id="gallonPrice" required>
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Round Gallon Price</label>
+                            <label class="form-label">Delivery Fee</label>
                             <div class="input-group">
                                 <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" value="30.00" readonly>
+                                <input type="number" step="0.01" min="0" class="form-control" id="deliveryFee" required>
                             </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Gallon Return Period (Days)</label>
-                        <input type="number" class="form-control" value="30" readonly>
-                        <small class="text-muted">Number of days before a gallon is marked as overdue</small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Overdue Days Threshold</label>
+                            <input type="number" min="1" class="form-control" id="overdueDays" required>
+                            <small class="text-muted">Days before a gallon is marked as overdue</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Missing Days Threshold</label>
+                            <input type="number" min="1" class="form-control" id="missingDays" required>
+                            <small class="text-muted">Days before a gallon is marked as missing</small>
+                        </div>
                     </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Business Settings
+                    </button>
                 </form>
             </div>
         </div>
@@ -137,13 +155,13 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <button class="btn btn-outline-primary" onclick="exportData()">
-                        <i class="bi bi-download me-2"></i>Export Data
+                        <i class="bi bi-download me-2"></i>Export System Logs
                     </button>
                     <button class="btn btn-outline-info" onclick="viewLogs()">
                         <i class="bi bi-journal-text me-2"></i>View System Logs
                     </button>
                     <button class="btn btn-outline-warning" onclick="clearCache()">
-                        <i class="bi bi-trash me-2"></i>Clear Cache
+                        <i class="bi bi-trash me-2"></i>Clear System Logs
                     </button>
                 </div>
             </div>
@@ -181,10 +199,182 @@
         </div>
     </div>
 </div>
+
+<!-- System Logs Modal -->
+<div class="modal fade" id="logsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">System Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="filterAction" onchange="loadSystemLogs()">
+                                <option value="">All Actions</option>
+                                <option value="login">Login</option>
+                                <option value="logout">Logout</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="filterRole" onchange="loadSystemLogs()">
+                                <option value="">All Roles</option>
+                                <option value="admin">Admin</option>
+                                <option value="employee">Employee</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="filterPlatform" onchange="loadSystemLogs()">
+                                <option value="">All Platforms</option>
+                                <option value="web">Web</option>
+                                <option value="mobile">Mobile</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-sm btn-primary w-100" onclick="refreshLogs()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                                <th>Platform</th>
+                                <th>Device</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Logs Confirmation Modal -->
+<div class="modal fade" id="clearLogsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Clear System Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action will permanently delete all system logs and cannot be undone.
+                </div>
+                <form id="clearLogsForm" onsubmit="confirmClearLogs(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Enter Your Password to Confirm</label>
+                        <input type="password" class="form-control" id="clearLogsPassword" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Clear All Logs
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
+    // Load settings on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+    });
+
+    async function loadSettings() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/settings`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load settings');
+            }
+
+            const settings = await response.json();
+            
+            // Populate business settings
+            document.getElementById('businessName').value = settings.business_name || '';
+            document.getElementById('businessAddress').value = settings.business_address || '';
+            document.getElementById('businessPhone').value = settings.business_phone || '';
+            document.getElementById('gallonPrice').value = settings.gallon_price || '25.00';
+            document.getElementById('deliveryFee').value = settings.delivery_fee || '50.00';
+            document.getElementById('overdueDays').value = settings.overdue_days_threshold || '7';
+            document.getElementById('missingDays').value = settings.missing_days_threshold || '30';
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            alert('Failed to load settings');
+        }
+    }
+
+    async function updateBusinessSettings(e) {
+        e.preventDefault();
+        
+        const settings = {
+            business_name: document.getElementById('businessName').value,
+            business_address: document.getElementById('businessAddress').value,
+            business_phone: document.getElementById('businessPhone').value,
+            gallon_price: document.getElementById('gallonPrice').value,
+            delivery_fee: document.getElementById('deliveryFee').value,
+            overdue_days_threshold: document.getElementById('overdueDays').value,
+            missing_days_threshold: document.getElementById('missingDays').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(settings)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Business settings updated successfully');
+                loadSettings();
+            } else {
+                alert(data.message || 'Failed to update settings');
+            }
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            alert('Error updating settings');
+        }
+    }
+
     async function updateProfile(e) {
         e.preventDefault();
         
@@ -264,17 +454,155 @@
         }
     }
 
-    function exportData() {
-        alert('Data export feature coming soon');
+    async function exportData() {
+        try {
+            const action = document.getElementById('filterAction')?.value || '';
+            const role = document.getElementById('filterRole')?.value || '';
+            const platform = document.getElementById('filterPlatform')?.value || '';
+            
+            let url = `${API_BASE_URL}/logs/export?`;
+            if (action) url += `action=${action}&`;
+            if (role) url += `role=${role}&`;
+            if (platform) url += `platform=${platform}&`;
+            
+            // Open in new window to trigger download
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            alert('Error exporting system logs');
+        }
     }
 
-    function viewLogs() {
-        alert('System logs viewer coming soon');
+    let logsModal;
+    async function viewLogs() {
+        if (!logsModal) {
+            logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
+        }
+        logsModal.show();
+        await loadSystemLogs();
     }
 
+    async function loadSystemLogs() {
+        const action = document.getElementById('filterAction').value;
+        const role = document.getElementById('filterRole').value;
+        const platform = document.getElementById('filterPlatform').value;
+        
+        let url = `${API_BASE_URL}/logs?per_page=100`;
+        if (action) url += `&action=${action}`;
+        if (role) url += `&role=${role}`;
+        if (platform) url += `&platform=${platform}`;
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load logs');
+            }
+
+            const data = await response.json();
+            displayLogs(data.data || data);
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            document.getElementById('logsTableBody').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Error loading logs</td></tr>';
+        }
+    }
+
+    function displayLogs(logs) {
+        const tbody = document.getElementById('logsTableBody');
+        
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No logs found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+            const actionBadge = log.action === 'login' 
+                ? '<span class="badge bg-success">Login</span>'
+                : '<span class="badge bg-secondary">Logout</span>';
+            
+            const roleBadge = log.user_role === 'admin'
+                ? '<span class="badge bg-primary">Admin</span>'
+                : '<span class="badge bg-info">Employee</span>';
+            
+            const platformBadge = log.platform === 'web'
+                ? '<span class="badge bg-dark">Web</span>'
+                : '<span class="badge bg-warning">Mobile</span>';
+
+            return `
+                <tr>
+                    <td><small>${new Date(log.created_at).toLocaleString()}</small></td>
+                    <td>
+                        <div>${log.user_name}</div>
+                        <small class="text-muted">${log.user_email}</small>
+                    </td>
+                    <td>${roleBadge}</td>
+                    <td>${actionBadge}</td>
+                    <td>${platformBadge}</td>
+                    <td><small>${log.device || 'N/A'}</small></td>
+                    <td><small>${log.ip_address || 'N/A'}</small></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function refreshLogs() {
+        loadSystemLogs();
+    }
+
+    let clearLogsModal;
     function clearCache() {
-        if (confirm('Are you sure you want to clear the cache? You will be logged out.')) {
-            window.location.href = "{{ route('admin.logout') }}";
+        if (!clearLogsModal) {
+            clearLogsModal = new bootstrap.Modal(document.getElementById('clearLogsModal'));
+        }
+        document.getElementById('clearLogsPassword').value = '';
+        clearLogsModal.show();
+    }
+
+    async function confirmClearLogs(e) {
+        e.preventDefault();
+        
+        const password = document.getElementById('clearLogsPassword').value;
+        
+        if (!password) {
+            alert('Please enter your password');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/logs/clear`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`System logs cleared successfully. ${data.deleted_count} entries were deleted.`);
+                clearLogsModal.hide();
+                document.getElementById('clearLogsForm').reset();
+                if (logsModal && document.getElementById('logsModal').classList.contains('show')) {
+                    loadSystemLogs();
+                }
+            } else {
+                alert(data.message || 'Failed to clear logs');
+            }
+        } catch (error) {
+            console.error('Error clearing logs:', error);
+            alert('Error clearing system logs');
         }
     }
 </script>

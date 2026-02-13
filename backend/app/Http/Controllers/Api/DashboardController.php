@@ -107,6 +107,41 @@ class DashboardController extends Controller
                 }
                 break;
 
+            case 'weekly':
+                // Show last 5 weeks with labels like "Week 1", "Week 2", etc. from current year
+                $now = Carbon::now();
+                $currentWeek = $now->weekOfYear;
+                $currentYear = $now->year;
+                
+                // Display at least 5 weeks going back from current week
+                for ($i = 4; $i >= 0; $i--) {
+                    $weekNumber = $currentWeek - $i;
+                    
+                    // Handle week number going into previous year
+                    $year = $currentYear;
+                    if ($weekNumber <= 0) {
+                        $year = $currentYear - 1;
+                        // Get the last week of previous year
+                        $weekNumber = Carbon::create($year, 12, 28)->weekOfYear + $weekNumber;
+                    }
+                    
+                    // Calculate start and end of the week (Monday to Sunday)
+                    $startDate = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek();
+                    $endDate = Carbon::now()->setISODate($year, $weekNumber)->endOfWeek();
+                    
+                    $transactions = Transaction::whereBetween('created_at', [$startDate, $endDate])->get();
+
+                    $data[] = [
+                        'date' => $startDate->format('Y-m-d'),
+                        'label' => 'Week ' . $weekNumber,
+                        'transactions' => $transactions->count(),
+                        'revenue' => $transactions->sum('total_amount'),
+                        'gallons' => $transactions->sum('quantity'),
+                        'week_range' => $startDate->format('M d') . ' - ' . $endDate->format('M d'),
+                    ];
+                }
+                break;
+
             case 'year':
                 // Show current year and 3 previous years (4 years total)
                 $currentYear = Carbon::now()->year;

@@ -33,6 +33,16 @@ class GallonController extends Controller
         }
 
         $gallons = $query->orderBy('id', 'desc')->paginate($perPage);
+        
+        // Update days out for each gallon
+        $gallons->getCollection()->transform(function ($gallon) {
+            if ($gallon->status === 'OUT' && $gallon->last_borrowed_date) {
+                $gallon->overdue_days = now()->diffInDays($gallon->last_borrowed_date);
+            } else {
+                $gallon->overdue_days = 0;
+            }
+            return $gallon;
+        });
 
         return response()->json($gallons);
     }

@@ -152,11 +152,33 @@ CREATE TABLE system_settings (
 -- ========================================
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('gallon_price', '25.00', 'Default price per gallon'),
+('delivery_fee', '50.00', 'Delivery fee for delivery transactions'),
 ('overdue_days_threshold', '7', 'Days before gallon is considered overdue'),
 ('missing_days_threshold', '30', 'Days before gallon is marked as missing'),
 ('business_name', 'Water Refilling Station', 'Business name'),
 ('business_address', '', 'Business address'),
 ('business_phone', '', 'Business contact number');
+
+-- ========================================
+-- System Logs Table
+-- ========================================
+CREATE TABLE system_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    user_name VARCHAR(255) NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
+    user_role ENUM('admin', 'employee') NOT NULL,
+    action ENUM('login', 'logout') NOT NULL,
+    platform VARCHAR(50) NULL COMMENT 'web or mobile',
+    device VARCHAR(255) NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_action (action),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================
 -- Insert Sample Admin User

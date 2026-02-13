@@ -274,7 +274,19 @@
                 statusBadge = '<span class="badge bg-danger">Missing</span>';
             }
 
-            const daysOut = g.overdue_days || '-';
+            // Calculate days out
+            let daysOut = '-';
+            if (g.status === 'OUT' && g.last_borrowed_date) {
+                const borrowedDate = new Date(g.last_borrowed_date);
+                const today = new Date();
+                const diffTime = Math.abs(today - borrowedDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                daysOut = diffDays + (diffDays === 1 ? ' day' : ' days');
+            } else if (g.status === 'IN') {
+                daysOut = '-';
+            } else if (g.status === 'MISSING' && g.overdue_days) {
+                daysOut = g.overdue_days + (g.overdue_days === 1 ? ' day' : ' days');
+            }
             
             return `
                 <tr>
