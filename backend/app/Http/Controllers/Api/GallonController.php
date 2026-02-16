@@ -13,9 +13,7 @@ use Illuminate\Support\Facades\Validator;
 
 class GallonController extends Controller
 {
-    /**
-     * Get all gallons with pagination
-     */
+    // Get all gallons with pagination
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 50);
@@ -47,9 +45,7 @@ class GallonController extends Controller
         return response()->json($gallons);
     }
 
-    /**
-     * Get single gallon by code
-     */
+    // Get single gallon by code
     public function show($code)
     {
         $gallon = Gallon::where('gallon_code', $code)
@@ -59,9 +55,7 @@ class GallonController extends Controller
         return response()->json($gallon);
     }
 
-    /**
-     * Scan gallon QR code
-     */
+    // Scan gallon QR code
     public function scan(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -107,9 +101,7 @@ class GallonController extends Controller
         ]);
     }
 
-    /**
-     * Return gallon to station
-     */
+    // Return gallon to station
     public function returnGallon(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -170,11 +162,12 @@ class GallonController extends Controller
         }
     }
 
-    /**
-     * Get gallon status summary
-     */
+    // Get gallon status summary
     public function statusSummary()
     {
+        // Update overdue status before getting summary
+        Gallon::updateAllOverdueStatus();
+        
         $summary = Gallon::select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->get()
@@ -189,9 +182,7 @@ class GallonController extends Controller
         ]);
     }
 
-    /**
-     * Get overdue gallons
-     */
+    // Get overdue gallons
     public function overdue()
     {
         $overdueGallons = Gallon::where('is_overdue', true)
@@ -202,9 +193,7 @@ class GallonController extends Controller
         return response()->json($overdueGallons);
     }
 
-    /**
-     * Get missing gallons
-     */
+    // Get missing gallons
     public function missing()
     {
         $missingGallons = Gallon::where('status', 'MISSING')
@@ -215,9 +204,7 @@ class GallonController extends Controller
         return response()->json($missingGallons);
     }
 
-    /**
-     * Get gallon history/logs
-     */
+    // Get gallon history/logs
     public function history($code)
     {
         $gallon = Gallon::where('gallon_code', $code)->firstOrFail();
@@ -230,26 +217,18 @@ class GallonController extends Controller
         return response()->json($logs);
     }
 
-    /**
-     * Update overdue gallons (cron job endpoint)
-     */
+    // Update overdue gallons (cron job endpoint)
     public function updateOverdue()
     {
-        $outGallons = Gallon::where('status', 'OUT')->get();
-
-        foreach ($outGallons as $gallon) {
-            $gallon->updateOverdueStatus();
-        }
+        $processed = Gallon::updateAllOverdueStatus();
 
         return response()->json([
             'message' => 'Overdue status updated',
-            'processed' => $outGallons->count()
+            'processed' => $processed
         ]);
     }
 
-    /**
-     * Bulk create gallons
-     */
+    // Bulk create gallons
     public function bulkCreate(Request $request)
     {
         $validator = Validator::make($request->all(), [

@@ -165,7 +165,31 @@ View detailed breakdown of today's sales:
 - Email: admin@waterrefilling.local
 - Password: admin123
 
-### 2. Dashboard
+### 2. User Registration (Signup)
+
+New users can register for an account:
+
+1. On the login page, click **"Sign Up"** button
+2. Fill in the registration form:
+   - **Name**: Your full name
+   - **Email**: Valid email address (will be used for login)
+   - **Role**: Select either:
+     - **Admin**: Full system access
+     - **Employee**: Mobile app access only
+   - **Password**: Minimum 8 characters
+   - **Confirm Password**: Must match password
+3. Click **"SIGN UP"** to create account
+4. You will be redirected to login page
+5. Use your new credentials to log in
+
+**Important Notes:**
+- Email must be unique (not already registered)
+- Password must be at least 8 characters
+- After signup, you'll need to login with your new credentials
+- Only admins can access the web admin panel
+- Employees can only use the mobile app
+
+### 3. Dashboard
 
 The admin dashboard provides a comprehensive overview:
 
@@ -189,7 +213,7 @@ The admin dashboard provides a comprehensive overview:
 - Last 10 transactions with details
 - Click to view full transaction details
 
-### 3. Viewing Transactions
+### 4. Viewing Transactions
 
 Navigate to **Transactions** page:
 
@@ -207,7 +231,7 @@ Navigate to **Transactions** page:
 - Employee who processed
 - Total amount
 
-### 4. Monitoring Gallons
+### 5. Monitoring Gallons
 
 Navigate to **Gallons** page (*to be implemented*):
 
@@ -216,7 +240,7 @@ Navigate to **Gallons** page (*to be implemented*):
 - Search by gallon code
 - View gallon history and movement
 
-### 5. Generating Reports
+### 6. Generating Reports
 
 Navigate to **Reports** page:
 
@@ -242,7 +266,48 @@ Navigate to **Reports** page:
 - Percentage analysis
 - Printable format
 
-### 6. Logout
+### 7. Managing Settings
+
+Navigate to **Settings** page:
+
+#### System Configuration
+
+Update various system settings:
+- **Overdue Days Threshold**: Days before gallon is marked overdue (default: 7)
+- **Missing Days Threshold**: Days before gallon is marked missing (default: 30)
+- **Gallon Price**: Default price per gallon (default: ₱25.00)
+- **Delivery Fee**: Additional fee for deliveries (default: ₱0.00)
+
+#### Clear Cache Quick Action
+
+Clear system cache to improve performance or resolve issues:
+
+1. In the **Quick Actions** section, find **"Clear Cache"**
+2. Click the **"Clear Cache"** button
+3. A confirmation modal will appear
+4. Enter your **admin password** for verification
+5. Click **"Clear Cache"** to confirm
+6. System will clear:
+   - Application cache
+   - Configuration cache
+   - Route cache
+   - View cache
+7. Success message will appear
+
+**When to Clear Cache:**
+- ✅ After updating system settings
+- ✅ When experiencing slow performance
+- ✅ After code changes or updates
+- ✅ When configuration changes don't take effect
+- ⚠️ Requires admin password for security
+
+**Important:**
+- Cache clearing requires your current password
+- Only admins can clear cache
+- This action affects all users temporarily
+- Performance may be slightly slower until cache rebuilds
+
+### 8. Logout
 
 Click your profile icon → **Logout**
 

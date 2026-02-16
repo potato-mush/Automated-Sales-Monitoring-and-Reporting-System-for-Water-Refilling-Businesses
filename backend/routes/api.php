@@ -93,6 +93,7 @@ Route::middleware('auth:web,api')->group(function () {
         Route::put('/', [SettingsController::class, 'update']);
         Route::get('/{key}', [SettingsController::class, 'show']);
         Route::put('/{key}', [SettingsController::class, 'updateSingle']);
+        Route::post('/clear-cache', [SettingsController::class, 'clearCache']);
     });
 
     // System Logs routes

@@ -298,13 +298,14 @@ Add permissions to `android/app/src/main/AndroidManifest.xml`:
 
 ## Next Steps
 
-1. Change default passwords
-2. Configure system settings
-3. Add more gallons if needed
-4. Create employee accounts
-5. Start using the system!
+1. Change default passwords (or create new accounts via signup)
+2. Configure system settings in the Settings page
+3. Test the cache clearing functionality
+4. Add more gallons if needed
+5. Create employee accounts using the signup feature
+6. Start using the system!
 
 For more information, see:
 - USER_MANUAL.md
 - API_DOCUMENTATION.md
-- DEVELOPER_GUIDE.md
+- QUICK_START.md

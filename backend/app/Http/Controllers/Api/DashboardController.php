@@ -12,11 +12,12 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Get dashboard overview
-     */
+    // Get dashboard overview
     public function index()
     {
+        // Update overdue status for all gallons
+        Gallon::updateAllOverdueStatus();
+        
         // Today's stats
         $todayTransactions = Transaction::today()->get();
         $todayRevenue = $todayTransactions->sum('total_amount');
@@ -64,9 +65,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Get sales chart data
-     */
+    // Get sales chart data
     public function salesChart(Request $request)
     {
         $period = $request->input('period', 'week'); // daily, week, month, year

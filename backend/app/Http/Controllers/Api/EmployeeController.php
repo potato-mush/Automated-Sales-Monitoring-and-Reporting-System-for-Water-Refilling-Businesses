@@ -11,9 +11,7 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of employees
-     */
+    // Display a listing of employees
     public function index(Request $request)
     {
         $query = User::query();
@@ -46,9 +44,7 @@ class EmployeeController extends Controller
         return response()->json($employees);
     }
 
-    /**
-     * Store a newly created employee
-     */
+    // Store a newly created employee
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -80,18 +76,14 @@ class EmployeeController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified employee
-     */
+    // Display the specified employee
     public function show($id)
     {
         $employee = User::findOrFail($id);
         return response()->json($employee->makeHidden(['password', 'remember_token']));
     }
 
-    /**
-     * Update the specified employee
-     */
+    // Update the specified employee
     public function update(Request $request, $id)
     {
         $employee = User::findOrFail($id);
@@ -126,9 +118,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified employee (with admin protection)
-     */
+    // Remove the specified employee (with admin protection)
     public function destroy($id)
     {
         $employee = User::findOrFail($id);
@@ -156,9 +146,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Toggle employee active status
-     */
+    // Toggle employee active status
     public function toggleStatus($id)
     {
         $employee = User::findOrFail($id);
@@ -171,9 +159,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Get employee statistics
-     */
+    // Get employee statistics
     public function statistics()
     {
         $totalEmployees = User::count();

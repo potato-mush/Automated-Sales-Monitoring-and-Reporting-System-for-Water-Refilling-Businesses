@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\SystemLog;
 
 class AdminController extends Controller
 {
-    /**
-     * Show the admin login form
-     */
+    // Show the admin login form
     public function showLogin()
     {
         if (Auth::check()) {
@@ -22,9 +21,7 @@ class AdminController extends Controller
         return view('admin.login');
     }
 
-    /**
-     * Handle admin login
-     */
+    // Handle admin login
     public function login(Request $request)
     {
         $request->validate([
@@ -67,9 +64,7 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Handle admin logout
-     */
+    // Handle admin logout
     public function logout(Request $request)
     {
         $user = Auth::user();
@@ -87,65 +82,88 @@ class AdminController extends Controller
         return redirect()->route('admin.login');
     }
 
-    /**
-     * Show dashboard
-     */
+    // Show the signup form
+    public function showSignup()
+    {
+        if (Auth::check()) {
+            return redirect()->route('admin.dashboard');
+        }
+        
+        return view('admin.signup');
+    }
+
+    // Handle signup submission
+    public function signup(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|in:admin,employee',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        try {
+            // Create the new user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'role' => $request->role,
+                'password' => Hash::make($request->password),
+                'is_active' => true,
+            ]);
+
+            // Redirect to login page with success message
+            return redirect()->route('admin.login')->with('status', 'Account created successfully! Please login with your credentials.');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'email' => 'An error occurred during signup. Please try again.',
+            ])->withInput();
+        }
+    }
+
+    // Show dashboard
     public function dashboard()
     {
         return view('admin.dashboard');
     }
 
-    /**
-     * Show transactions page
-     */
+    // Show transactions page
     public function transactions()
     {
         return view('admin.transactions');
     }
 
-    /**
-     * Show gallons page
-     */
+    // Show gallons page
     public function gallons()
     {
         return view('admin.gallons');
     }
 
-    /**
-     * Show reports page
-     */
+    // Show reports page
     public function reports()
     {
         return view('admin.reports');
     }
 
-    /**
-     * Show inventory page
-     */
+    // Show inventory page
     public function inventory()
     {
         return view('admin.inventory');
     }
 
-    /**
-     * Show employees page
-     */
+    // Show employees page
     public function employees()
     {
         return view('admin.employees');
     }
 
-    /**
-     * Show QR print page
-     */
+    // Show QR print page
     public function qrPrint()
     {
         return view('admin.qr-print');
     }
 
-    /**
-     * Show settings page
-     */
+    // Show settings page
     public function settings()
     {
         return view('admin.settings');

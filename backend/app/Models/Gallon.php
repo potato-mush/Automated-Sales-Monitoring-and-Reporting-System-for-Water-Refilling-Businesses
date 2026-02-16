@@ -89,8 +89,8 @@ class Gallon extends Model
     {
         if ($this->status === 'OUT' && $this->last_borrowed_date) {
             $daysBorrowed = now()->diffInDays($this->last_borrowed_date);
-            $overdueThreshold = config('app.overdue_days_threshold', 7);
-            $missingThreshold = config('app.missing_days_threshold', 30);
+            $overdueThreshold = (int) SystemSetting::get('overdue_days_threshold', 7);
+            $missingThreshold = (int) SystemSetting::get('missing_days_threshold', 30);
 
             $this->overdue_days = $daysBorrowed;
             $this->is_overdue = $daysBorrowed >= $overdueThreshold;
@@ -101,5 +101,41 @@ class Gallon extends Model
 
             $this->save();
         }
+    }
+
+    // Batch update overdue status for all OUT gallons
+    public static function updateAllOverdueStatus()
+    {
+        $overdueThreshold = (int) SystemSetting::get('overdue_days_threshold', 7);
+        $missingThreshold = (int) SystemSetting::get('missing_days_threshold', 30);
+        
+        // Update all OUT gallons
+        $outGallons = self::where('status', 'OUT')
+            ->whereNotNull('last_borrowed_date')
+            ->get();
+        
+        foreach ($outGallons as $gallon) {
+            $daysBorrowed = now()->diffInDays($gallon->last_borrowed_date);
+            
+            $gallon->overdue_days = $daysBorrowed;
+            $gallon->is_overdue = $daysBorrowed >= $overdueThreshold;
+            
+            // Mark as MISSING if exceeds missing threshold
+            if ($daysBorrowed >= $missingThreshold) {
+                $gallon->status = 'MISSING';
+            }
+            
+            $gallon->save();
+        }
+        
+        // Reset overdue status for IN gallons
+        self::where('status', 'IN')
+            ->where(function($query) {
+                $query->where('is_overdue', true)
+                      ->orWhere('overdue_days', '>', 0);
+            })
+            ->update(['is_overdue' => false, 'overdue_days' => 0]);
+        
+        return $outGallons->count();
     }
 }

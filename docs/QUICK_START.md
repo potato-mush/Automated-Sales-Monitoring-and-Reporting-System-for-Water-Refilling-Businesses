@@ -76,6 +76,7 @@ Before starting, ensure you have:
 4. **Login with default credentials**
    - Email: `admin@waterrefilling.local`
    - Password: `admin123`
+   - Or click **"Sign Up"** to create a new account
 
 ✅ **Verify:** You can see the dashboard
 
@@ -142,8 +143,8 @@ Before starting, ensure you have:
 ### For Business Use
 
 1. **Change Default Passwords**
-   - Create new admin and employee accounts
-   - Disable or delete default accounts
+   - Create new admin and employee accounts using the signup feature
+   - Disable or delete default accounts for security
 
 2. **Add Your Gallons**
    - Print QR codes for your gallon containers

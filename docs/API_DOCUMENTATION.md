@@ -664,6 +664,142 @@ Manually trigger overdue status update (usually run as cron job).
 
 ---
 
+## Settings Endpoints
+
+### 1. Get All Settings
+**GET** `/settings`
+
+Get all system settings.
+
+**Response (200 OK):**
+```json
+[
+    {
+        "id": 1,
+        "setting_key": "overdue_days_threshold",
+        "setting_value": "7",
+        "description": "Days before gallon is marked overdue"
+    },
+    {
+        "id": 2,
+        "setting_key": "missing_days_threshold",
+        "setting_value": "30",
+        "description": "Days before gallon is marked missing"
+    },
+    {
+        "id": 3,
+        "setting_key": "gallon_price",
+        "setting_value": "25.00",
+        "description": "Default price per gallon"
+    },
+    {
+        "id": 4,
+        "setting_key": "delivery_fee",
+        "setting_value": "0.00",
+        "description": "Additional delivery fee"
+    }
+]
+```
+
+---
+
+### 2. Update Settings
+**PUT** `/settings`
+
+Update multiple settings at once.
+
+**Request Body:**
+```json
+{
+    "overdue_days_threshold": "10",
+    "missing_days_threshold": "45",
+    "gallon_price": "30.00",
+    "delivery_fee": "20.00"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "message": "Settings updated successfully",
+    "settings": [...]
+}
+```
+
+---
+
+### 3. Get Single Setting
+**GET** `/settings/{key}`
+
+Get a specific setting by key.
+
+**Response (200 OK):**
+```json
+{
+    "setting_key": "gallon_price",
+    "setting_value": "25.00",
+    "description": "Default price per gallon"
+}
+```
+
+**Errors:**
+- `404` - Setting not found
+
+---
+
+### 4. Update Single Setting
+**PUT** `/settings/{key}`
+
+Update a specific setting.
+
+**Request Body:**
+```json
+{
+    "setting_value": "30.00"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "message": "Setting updated successfully",
+    "setting": {...}
+}
+```
+
+---
+
+### 5. Clear Cache
+**POST** `/settings/clear-cache`
+
+Clear all application caches (requires admin password).
+
+**Request Body:**
+```json
+{
+    "password": "admin123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "message": "Cache cleared successfully",
+    "cleared": [
+        "application",
+        "config",
+        "route",
+        "view"
+    ]
+}
+```
+
+**Errors:**
+- `401` - Invalid password
+- `403` - Unauthorized (not admin)
+
+---
+
 ## Error Responses
 
 ### Standard Error Format

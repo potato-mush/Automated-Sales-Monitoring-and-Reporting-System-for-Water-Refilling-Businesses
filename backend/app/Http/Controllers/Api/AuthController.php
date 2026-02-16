@@ -12,9 +12,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    /**
-     * Login user and return JWT token
-     */
+    // Login user and return JWT token
     public function login(Request $request)
     {
         $request->validate([
@@ -57,9 +55,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout user (invalidate token)
-     */
+    // Logout user (invalidate token)
     public function logout(Request $request)
     {
         $user = auth()->user();
@@ -79,9 +75,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get authenticated user
-     */
+    // Get authenticated user
     public function me()
     {
         $user = auth()->user();
@@ -109,9 +103,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Update user profile
-     */
+    // Update user profile
     public function updateProfile(Request $request)
     {
         /** @var User $user */
@@ -137,9 +129,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Change user password
-     */
+    // Change user password
     public function changePassword(Request $request)
     {
         /** @var User $user */

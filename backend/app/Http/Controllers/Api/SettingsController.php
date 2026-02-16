@@ -7,12 +7,13 @@ use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class SettingsController extends Controller
 {
-    /**
-     * Get all system settings
-     */
+    // Get all system settings
     public function index()
     {
         $settings = SystemSetting::getAllSettings();
@@ -28,9 +29,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Update system settings
-     */
+    // Update system settings
     public function update(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -75,9 +74,7 @@ class SettingsController extends Controller
         }
     }
 
-    /**
-     * Get a specific setting
-     */
+    // Get a specific setting
     public function show($key)
     {
         $value = SystemSetting::get($key);
@@ -94,9 +91,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Update a specific setting
-     */
+    // Update a specific setting
     public function updateSingle(Request $request, $key)
     {
         $validator = Validator::make($request->all(), [
@@ -117,5 +112,51 @@ class SettingsController extends Controller
             'key' => $key,
             'value' => $request->input('value')
         ]);
+    }
+
+    // Clear application cache
+    public function clearCache(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Password is required',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Verify user password
+        $user = Auth::user();
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Invalid password'
+            ], 401);
+        }
+
+        try {
+            // Clear various Laravel caches
+            Artisan::call('cache:clear');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
+
+            return response()->json([
+                'message' => 'Cache cleared successfully',
+                'cleared' => [
+                    'application_cache' => true,
+                    'configuration_cache' => true,
+                    'route_cache' => true,
+                    'view_cache' => true,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to clear cache',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

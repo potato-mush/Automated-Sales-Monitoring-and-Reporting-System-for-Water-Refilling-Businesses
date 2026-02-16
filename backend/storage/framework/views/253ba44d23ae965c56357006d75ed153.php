@@ -160,8 +160,11 @@
                     <button class="btn btn-outline-info" onclick="viewLogs()">
                         <i class="bi bi-journal-text me-2"></i>View System Logs
                     </button>
-                    <button class="btn btn-outline-warning" onclick="clearCache()">
+                    <button class="btn btn-outline-warning" onclick="clearSystemLogs()">
                         <i class="bi bi-trash me-2"></i>Clear System Logs
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="showClearCacheModal()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Clear Application Cache
                     </button>
                 </div>
             </div>
@@ -288,6 +291,42 @@
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-danger">
                             <i class="bi bi-trash me-2"></i>Clear All Logs
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Cache Confirmation Modal -->
+<div class="modal fade" id="clearCacheModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Clear Application Cache</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This will clear all application caches including:
+                    <ul class="mb-0 mt-2">
+                        <li>Application Cache</li>
+                        <li>Configuration Cache</li>
+                        <li>Route Cache</li>
+                        <li>View Cache</li>
+                    </ul>
+                </div>
+                <form id="clearCacheForm" onsubmit="confirmClearCache(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Enter Your Password to Confirm</label>
+                        <input type="password" class="form-control" id="clearCachePassword" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Clear Cache
                         </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </div>
@@ -558,7 +597,7 @@
     }
 
     let clearLogsModal;
-    function clearCache() {
+    function clearSystemLogs() {
         if (!clearLogsModal) {
             clearLogsModal = new bootstrap.Modal(document.getElementById('clearLogsModal'));
         }
@@ -603,6 +642,53 @@
         } catch (error) {
             console.error('Error clearing logs:', error);
             alert('Error clearing system logs');
+        }
+    }
+
+    // Clear Cache Functions
+    let clearCacheModal;
+    function showClearCacheModal() {
+        if (!clearCacheModal) {
+            clearCacheModal = new bootstrap.Modal(document.getElementById('clearCacheModal'));
+        }
+        document.getElementById('clearCachePassword').value = '';
+        clearCacheModal.show();
+    }
+
+    async function confirmClearCache(e) {
+        e.preventDefault();
+        
+        const password = document.getElementById('clearCachePassword').value;
+        
+        if (!password) {
+            alert('Please enter your password');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/settings/clear-cache`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Application cache cleared successfully!');
+                clearCacheModal.hide();
+                document.getElementById('clearCacheForm').reset();
+            } else {
+                alert(data.message || 'Failed to clear cache');
+            }
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+            alert('Error clearing application cache');
         }
     }
 </script>

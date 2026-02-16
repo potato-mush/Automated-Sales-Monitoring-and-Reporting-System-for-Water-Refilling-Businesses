@@ -14,9 +14,7 @@ use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
-    /**
-     * Get all transactions with pagination
-     */
+    // Get all transactions with pagination
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 15);
@@ -39,9 +37,7 @@ class TransactionController extends Controller
         return response()->json($transactions);
     }
 
-    /**
-     * Get single transaction
-     */
+    // Get single transaction
     public function show($id)
     {
         $transaction = Transaction::with(['employee', 'items.gallon'])->findOrFail($id);
@@ -49,9 +45,7 @@ class TransactionController extends Controller
         return response()->json($transaction);
     }
 
-    /**
-     * Create new transaction
-     */
+    // Create new transaction
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -164,9 +158,7 @@ class TransactionController extends Controller
         }
     }
 
-    /**
-     * Get today's transactions summary
-     */
+    // Get today's transactions summary
     public function todaySummary()
     {
         $today = Transaction::today()->get();
@@ -198,9 +190,7 @@ class TransactionController extends Controller
         ]);
     }
 
-    /**
-     * Get transaction statistics
-     */
+    // Get transaction statistics
     public function statistics(Request $request)
     {
         $period = $request->input('period', 'today'); // today, week, month

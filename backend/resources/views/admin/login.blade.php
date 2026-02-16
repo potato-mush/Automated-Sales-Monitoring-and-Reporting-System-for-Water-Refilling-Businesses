@@ -78,6 +78,13 @@
                             </button>
                         </form>
 
+                        <div class="text-center mt-3">
+                            <p class="text-muted mb-2">Don't have an account?</p>
+                            <a href="{{ route('admin.signup') }}" class="btn btn-outline-primary w-100 py-2">
+                                <i class="bi bi-person-plus me-2"></i>Sign Up
+                            </a>
+                        </div>
+
                         <div class="text-center mt-4">
                             <small class="text-muted">
                                 Default: admin@waterrefilling.local / password

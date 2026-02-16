@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Change this to your backend URL
-  static const String baseUrl = 'http://192.168.100.104:8000/api';
+  static const String baseUrl = 'http://YOUR_IP_ADDRESS:8000/api';
   
   final SharedPreferences prefs;
 

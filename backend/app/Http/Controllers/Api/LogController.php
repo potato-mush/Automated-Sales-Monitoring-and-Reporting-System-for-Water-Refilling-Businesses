@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class LogController extends Controller
 {
-    /**
-     * Get system logs with pagination and filters
-     */
+    // Get system logs with pagination and filters
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 50);
@@ -49,9 +47,7 @@ class LogController extends Controller
         return response()->json($logs);
     }
 
-    /**
-     * Get system logs statistics
-     */
+    // Get system logs statistics
     public function statistics()
     {
         $totalLogs = SystemLog::count();
@@ -81,9 +77,7 @@ class LogController extends Controller
         ]);
     }
 
-    /**
-     * Export system logs as CSV
-     */
+    // Export system logs as CSV
     public function export(Request $request)
     {
         $action = $request->input('action');
@@ -139,9 +133,7 @@ class LogController extends Controller
             ->header('Content-Disposition', 'attachment; filename="system_logs_' . date('Y-m-d_His') . '.csv"');
     }
 
-    /**
-     * Clear all system logs (requires password confirmation)
-     */
+    // Clear all system logs (requires password confirmation)
     public function clear(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -190,9 +182,7 @@ class LogController extends Controller
         }
     }
 
-    /**
-     * Helper function to escape CSV values
-     */
+    // Helper function to escape CSV values
     private function escapeCsv($value)
     {
         if (strpos($value, ',') !== false || strpos($value, '"') !== false || strpos($value, "\n") !== false) {

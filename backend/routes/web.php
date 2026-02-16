@@ -24,6 +24,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AdminController::class, 'showLogin'])->name('login');
         Route::post('/login', [AdminController::class, 'login'])->name('login.submit');
+        Route::get('/signup', [AdminController::class, 'showSignup'])->name('signup');
+        Route::post('/signup', [AdminController::class, 'signup'])->name('signup.submit');
     });
 
     // Protected admin routes

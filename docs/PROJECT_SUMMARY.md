@@ -81,7 +81,8 @@ The system was designed to:
 - 📈 Report generation (daily, weekly, monthly)
 - 🗄️ Gallon inventory tracking
 - ⚙️ System settings management
-- 👨‍💼 User account management
+- 🧹 Cache clearing functionality
+- 👨‍💼 User account creation via signup
 - ❌ **Cannot:** Edit transaction history (audit protection)
 
 ### Employee
@@ -281,6 +282,16 @@ The system automatically:
    - Printable format
    - Breakdown by type and payment
 
+4. **Settings Page**
+   - System configuration (overdue/missing thresholds, pricing)
+   - Clear cache quick action with password verification
+   - Update gallon prices and delivery fees
+
+5. **Login & Signup**
+   - Secure authentication
+   - User registration functionality
+   - Role-based access control
+
 ### Key Features
 
 - 📊 Interactive Chart.js visualizations
@@ -466,7 +477,7 @@ water-refilling-system/
 - **Stored Procedures:** 1 (overdue update)
 
 ### API
-- **Endpoints:** 25+
+- **Endpoints:** 30+
 - **Authentication:** JWT
 - **Response Format:** JSON
 
@@ -476,7 +487,7 @@ water-refilling-system/
 - **Platform:** Android (expandable to iOS)
 
 ### Web Admin
-- **Pages:** 4
+- **Pages:** 6 (Dashboard, Transactions, Reports, Settings, QR Print, Gallons)
 - **Charts:** 2 (Chart.js)
 - **UI Framework:** Bootstrap 5
 

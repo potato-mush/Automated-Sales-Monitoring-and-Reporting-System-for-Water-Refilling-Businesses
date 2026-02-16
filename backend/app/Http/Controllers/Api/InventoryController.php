@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
-    /**
-     * Display a listing of inventory items
-     */
+    // Display a listing of inventory items
     public function index(Request $request)
     {
         $query = InventoryItem::query();
@@ -41,9 +39,7 @@ class InventoryController extends Controller
         return response()->json($items);
     }
 
-    /**
-     * Store a newly created inventory item
-     */
+    // Store a newly created inventory item
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -71,18 +67,14 @@ class InventoryController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified inventory item
-     */
+    // Display the specified inventory item
     public function show($id)
     {
         $item = InventoryItem::findOrFail($id);
         return response()->json($item);
     }
 
-    /**
-     * Update the specified inventory item
-     */
+    // Update the specified inventory item
     public function update(Request $request, $id)
     {
         $item = InventoryItem::findOrFail($id);
@@ -112,9 +104,7 @@ class InventoryController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified inventory item
-     */
+    // Remove the specified inventory item
     public function destroy($id)
     {
         $item = InventoryItem::findOrFail($id);
@@ -125,9 +115,7 @@ class InventoryController extends Controller
         ]);
     }
 
-    /**
-     * Get inventory statistics
-     */
+    // Get inventory statistics
     public function statistics()
     {
         $totalItems = InventoryItem::count();
@@ -149,9 +137,7 @@ class InventoryController extends Controller
         ]);
     }
 
-    /**
-     * Adjust inventory quantity
-     */
+    // Adjust inventory quantity
     public function adjustQuantity(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [

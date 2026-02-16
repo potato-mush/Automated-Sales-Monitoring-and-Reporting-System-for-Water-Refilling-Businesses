@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\Route;
 class RouteServiceProvider extends ServiceProvider
 {
     /**
-     * The path to the "home" route for your application.
+     * The path to the "home" route.
      *
      * @var string
      */
-    public const HOME = '/home';
+    public const HOME = '/admin/dashboard';
 
     /**
-     * Define your route model bindings, pattern filters, and other route configuration.
+     * Define route model bindings, pattern filters, and other route configuration.
      */
     public function boot(): void
     {

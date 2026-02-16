@@ -25,33 +25,25 @@ class InventoryItem extends Model
         'reorder_level' => 'integer',
     ];
 
-    /**
-     * Check if item needs reordering
-     */
+    // Check if item needs reordering
     public function needsReorder()
     {
         return $this->quantity <= $this->reorder_level;
     }
 
-    /**
-     * Get total value of this inventory item
-     */
+    // Get total value of this inventory item
     public function getTotalValueAttribute()
     {
         return $this->quantity * $this->unit_price;
     }
 
-    /**
-     * Scope for low stock items
-     */
+    // Scope for low stock items
     public function scopeLowStock($query)
     {
         return $query->whereRaw('quantity <= reorder_level');
     }
 
-    /**
-     * Scope by category
-     */
+    // Scope by category
     public function scopeCategory($query, $category)
     {
         return $query->where('category', $category);
