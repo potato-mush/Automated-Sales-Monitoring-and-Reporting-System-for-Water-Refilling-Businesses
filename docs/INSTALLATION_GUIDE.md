@@ -38,8 +38,8 @@ Or manually:
 2. Import the `schema.sql` file
 
 **Default Credentials:**
-- Admin: admin@waterrefilling.local / admin123
-- Employee: employee@waterrefilling.local / admin123
+- Admin: admin@waterrefilling.local / password
+- Employee: employee@waterrefilling.local / password
 
 ### 1.2 Verify Installation
 Check if tables are created:
@@ -192,7 +192,7 @@ The API will be available at: http://localhost:8000
 
 **Default Employee Login:**
 - Email: employee@waterrefilling.local
-- Password: admin123
+- Password: password
 
 ## Step 5: Testing the System
 
