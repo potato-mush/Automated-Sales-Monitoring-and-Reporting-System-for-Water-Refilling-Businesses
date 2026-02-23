@@ -17,6 +17,15 @@ use App\Http\Controllers\Api\LogController;
 |--------------------------------------------------------------------------
 */
 
+// Test endpoint for connection checking
+Route::get('/test', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'Server is reachable',
+        'timestamp' => now()->toDateTimeString(),
+    ]);
+});
+
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 

@@ -3,12 +3,55 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://YOUR_IP_ADDRESS:8000/api';
+  // Default fallback URL
+  static const String defaultBaseUrl = 'http://192.168.1.100:8000/api';
   
   final SharedPreferences prefs;
 
   ApiService(this.prefs);
+
+  // Get the current base URL (either custom or default)
+  String get baseUrl {
+    return prefs.getString('api_base_url') ?? defaultBaseUrl;
+  }
+
+  // Allow users to set custom API URL
+  Future<void> setBaseUrl(String url) async {
+    await prefs.setString('api_base_url', url);
+  }
+
+  // Test if the URL is reachable
+  Future<Map<String, dynamic>> testConnection(String url) async {
+    try {
+      final testUrl = url.endsWith('/api') ? url : '$url/api';
+      final fullUrl = '$testUrl/test';
+      
+      print('Testing connection to: $fullUrl');
+      
+      final response = await http.get(
+        Uri.parse(fullUrl),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+      
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': 'Connection successful'};
+      } else {
+        return {
+          'success': false,
+          'message': 'Server returned status ${response.statusCode}'
+        };
+      }
+    } catch (e) {
+      print('Connection error: $e');
+      return {
+        'success': false,
+        'message': 'Connection failed: ${e.toString()}'
+      };
+    }
+  }
 
   Future<String?> getToken() async {
     return prefs.getString('token');
