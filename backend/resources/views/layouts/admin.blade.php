@@ -21,7 +21,7 @@
             @include('partials.sidebar')
 
             <!-- Main Content -->
-            <main class="col-md-10 ms-sm-auto px-md-4">
+            <main class="col-md-10 ms-sm-auto px-3 px-md-4 admin-main">
                 @yield('content')
             </main>
         </div>

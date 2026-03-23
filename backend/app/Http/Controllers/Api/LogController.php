@@ -111,7 +111,7 @@ class LogController extends Controller
         $logs = $query->get();
 
         // Create CSV content
-        $csv = "ID,User Name,Email,Role,Action,Platform,Device,IP Address,Date/Time\n";
+        $csv = "ID,User Name,Email,Role,Action,Details,Platform,Device,IP Address,Date/Time\n";
         
         foreach ($logs as $log) {
             $csv .= sprintf(
@@ -121,6 +121,7 @@ class LogController extends Controller
                 $this->escapeCsv($log->user_email),
                 ucfirst($log->user_role),
                 ucfirst($log->action),
+                $this->escapeCsv($log->details ?? 'N/A'),
                 ucfirst($log->platform ?? 'N/A'),
                 $this->escapeCsv($log->device ?? 'N/A'),
                 $log->ip_address ?? 'N/A',

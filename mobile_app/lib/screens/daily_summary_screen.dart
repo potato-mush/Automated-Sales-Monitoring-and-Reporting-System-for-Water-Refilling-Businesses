@@ -159,15 +159,6 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                   const SizedBox(height: 12),
 
                   _buildTypeCard(
-                    'Walk-in',
-                    byType['walk_in']?['count'] ?? 0,
-                    byType['walk_in']?['revenue'] ?? 0.0,
-                    Icons.store,
-                    Colors.blue,
-                  ),
-                  const SizedBox(height: 8),
-
-                  _buildTypeCard(
                     'Delivery',
                     byType['delivery']?['count'] ?? 0,
                     byType['delivery']?['revenue'] ?? 0.0,
@@ -195,10 +186,9 @@ class _DailySummaryScreenState extends State<DailySummaryScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  _buildPaymentCard('Cash', byType['cash'] ?? 0.0, Icons.money),
+                  _buildPaymentCard('Cash', byPayment['cash'] ?? 0.0, Icons.money),
                   _buildPaymentCard('GCash', byPayment['gcash'] ?? 0.0, Icons.phone_android),
                   _buildPaymentCard('Card', byPayment['card'] ?? 0.0, Icons.credit_card),
-                  _buildPaymentCard('Bank Transfer', byPayment['bank_transfer'] ?? 0.0, Icons.account_balance),
                 ],
               ),
             ),

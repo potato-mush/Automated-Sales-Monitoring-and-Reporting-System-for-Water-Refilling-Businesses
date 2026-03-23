@@ -17,6 +17,7 @@ class SystemLog extends Model
         'user_email',
         'user_role',
         'action',
+        'details',
         'platform',
         'device',
         'ip_address',
@@ -53,7 +54,7 @@ class SystemLog extends Model
     }
 
     // Helper method to create log entry
-    public static function logActivity($user, $action, $request, $platform = 'web')
+    public static function logActivity($user, $action, $request, $platform = 'web', $details = null)
     {
         return self::create([
             'user_id' => $user->id,
@@ -61,6 +62,7 @@ class SystemLog extends Model
             'user_email' => $user->email,
             'user_role' => $user->role,
             'action' => $action,
+            'details' => $details,
             'platform' => $platform,
             'device' => self::getDeviceInfo($request),
             'ip_address' => $request->ip(),

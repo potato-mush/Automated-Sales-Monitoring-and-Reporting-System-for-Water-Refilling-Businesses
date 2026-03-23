@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/gallon_provider.dart';
+import '../providers/inventory_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,10 +23,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
     final gallonProvider = Provider.of<GallonProvider>(context, listen: false);
+    final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
     
     await Future.wait([
       transactionProvider.loadTodaySummary(),
       gallonProvider.loadStatusSummary(),
+      inventoryProvider.refreshData(),
     ]);
   }
 
@@ -228,6 +231,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
+
+              Consumer<InventoryProvider>(
+                builder: (context, provider, _) {
+                  if (provider.lowStockCount <= 0) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: Card(
+                      color: Colors.orange[50],
+                      child: ListTile(
+                        leading: const Icon(Icons.notification_important, color: Colors.orange),
+                        title: const Text('Low Stock Notification'),
+                        subtitle: Text('${provider.lowStockCount} inventory item(s) need restocking.'),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () => Navigator.pushNamed(context, '/inventory'),
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               // Quick Actions
               const Text(

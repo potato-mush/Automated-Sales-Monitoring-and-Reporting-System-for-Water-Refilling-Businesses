@@ -43,6 +43,7 @@ Route::middleware('auth:web,api')->group(function () {
         Route::get('/', [DashboardController::class, 'index']);
         Route::get('/sales-chart', [DashboardController::class, 'salesChart']);
         Route::get('/transaction-type-breakdown', [DashboardController::class, 'transactionTypeBreakdown']);
+        Route::get('/inventory-logs', [DashboardController::class, 'recentInventoryLogs']);
         Route::get('/daily-report', [DashboardController::class, 'dailyReport']);
         Route::get('/weekly-report', [DashboardController::class, 'weeklyReport']);
         Route::get('/monthly-report', [DashboardController::class, 'monthlyReport']);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Gallon;
 use App\Models\User;
+use App\Models\SystemLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -368,5 +369,26 @@ class DashboardController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Get recent inventory management logs.
+     */
+    public function recentInventoryLogs()
+    {
+        $logs = SystemLog::query()
+            ->whereIn('action', ['inventory_create', 'inventory_update', 'inventory_delete', 'inventory_adjust'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get([
+                'id',
+                'user_name',
+                'user_role',
+                'action',
+                'details',
+                'created_at',
+            ]);
+
+        return response()->json($logs);
     }
 }

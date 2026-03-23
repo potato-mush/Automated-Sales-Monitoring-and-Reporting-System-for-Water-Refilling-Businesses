@@ -21,7 +21,7 @@
             <?php echo $__env->make('partials.sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
             <!-- Main Content -->
-            <main class="col-md-10 ms-sm-auto px-md-4">
+            <main class="col-md-10 ms-sm-auto px-3 px-md-4 admin-main">
                 <?php echo $__env->yieldContent('content'); ?>
             </main>
         </div>

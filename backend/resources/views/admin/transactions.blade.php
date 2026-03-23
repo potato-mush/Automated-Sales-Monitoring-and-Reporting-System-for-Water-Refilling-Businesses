@@ -20,7 +20,6 @@
                 <label class="form-label">Transaction Type</label>
                 <select class="form-select" id="filterType" onchange="loadTransactions()">
                     <option value="">All Types</option>
-                    <option value="walk-in">Walk-in</option>
                     <option value="delivery">Delivery</option>
                     <option value="refill-only">Refill Only</option>
                 </select>

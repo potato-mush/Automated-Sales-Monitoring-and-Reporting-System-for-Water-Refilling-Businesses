@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/gallon_provider.dart';
+import 'providers/inventory_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/new_transaction_screen.dart';
@@ -59,6 +60,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => GallonProvider(apiService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => InventoryProvider(apiService),
         ),
       ],
       child: MaterialApp(

@@ -9,16 +9,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="<?php echo e(asset('css/style.css')); ?>">
 </head>
-<body class="bg-light">
+<body class="auth-page">
     <div class="container">
         <div class="row justify-content-center align-items-center min-vh-100">
             <div class="col-md-5">
-                <div class="card shadow">
+                <div class="card auth-card">
                     <div class="card-body p-5">
                         <div class="text-center mb-4">
-                            <i class="bi bi-droplet-fill text-primary" style="font-size: 4rem;"></i>
-                            <h3 class="mt-3">Water Refilling System</h3>
-                            <p class="text-muted">Admin Portal</p>
+                            <i class="bi bi-droplet-fill auth-icon"></i>
+                            <h3 class="mt-3 mb-1">Water Refilling System</h3>
+                            <p class="text-muted mb-0">Admin Portal</p>
                         </div>
 
                         <?php if($errors->any()): ?>

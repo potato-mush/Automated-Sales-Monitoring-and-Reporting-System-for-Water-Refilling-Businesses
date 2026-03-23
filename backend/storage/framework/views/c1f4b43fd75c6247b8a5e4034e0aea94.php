@@ -1,11 +1,16 @@
-<nav class="navbar navbar-dark sticky-top">
+<nav class="navbar admin-navbar sticky-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="<?php echo e(route('admin.dashboard')); ?>">
+        <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-outline-secondary d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#adminSidebar" aria-controls="adminSidebar" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="navbar-brand" href="<?php echo e(route('admin.dashboard')); ?>">
             <i class="bi bi-droplet-fill me-2"></i>
             Water Refilling System
-        </a>
+            </a>
+        </div>
         <div class="dropdown">
-            <button class="btn btn-link text-white dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle me-1"></i>
                 <span><?php echo e(auth()->user()->name ?? 'Admin'); ?></span>
             </button>

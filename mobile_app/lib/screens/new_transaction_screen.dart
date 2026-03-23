@@ -21,7 +21,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   final _customerAddressController = TextEditingController();
   final _notesController = TextEditingController();
 
-  String _transactionType = 'walk-in';
+  String _transactionType = 'refill-only';
   String _paymentMethod = 'cash';
   bool _showScanner = false;
   bool _showManualEntry = false;
@@ -833,7 +833,6 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 prefixIcon: Icon(Icons.category),
               ),
               items: const [
-                DropdownMenuItem(value: 'walk-in', child: Text('Walk-in')),
                 DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
                 DropdownMenuItem(value: 'refill-only', child: Text('Refill Only')),
               ],
@@ -873,7 +872,6 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 DropdownMenuItem(value: 'cash', child: Text('Cash')),
                 DropdownMenuItem(value: 'gcash', child: Text('GCash')),
                 DropdownMenuItem(value: 'card', child: Text('Card')),
-                DropdownMenuItem(value: 'bank-transfer', child: Text('Bank Transfer')),
               ],
               onChanged: (value) {
                 setState(() => _paymentMethod = value!);
@@ -969,7 +967,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                   // For delivery: (gallon_price + delivery_fee) × quantity
                   total = quantity * (_gallonPrice + _deliveryFee);
                 } else {
-                  // For walk-in and refill-only: gallon_price × quantity
+                  // For non-delivery transactions: gallon_price × quantity
                   total = quantity * _gallonPrice;
                 }
 

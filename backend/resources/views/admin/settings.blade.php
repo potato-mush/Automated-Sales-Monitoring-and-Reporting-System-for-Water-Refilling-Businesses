@@ -219,6 +219,10 @@
                                 <option value="">All Actions</option>
                                 <option value="login">Login</option>
                                 <option value="logout">Logout</option>
+                                <option value="inventory_create">Inventory Create</option>
+                                <option value="inventory_update">Inventory Update</option>
+                                <option value="inventory_delete">Inventory Delete</option>
+                                <option value="inventory_adjust">Inventory Quantity Adjust</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -250,6 +254,7 @@
                                 <th>User</th>
                                 <th>Role</th>
                                 <th>Action</th>
+                                <th>Details</th>
                                 <th>Platform</th>
                                 <th>Device</th>
                                 <th>IP Address</th>
@@ -257,7 +262,7 @@
                         </thead>
                         <tbody id="logsTableBody">
                             <tr>
-                                <td colspan="7" class="text-center">Loading...</td>
+                                <td colspan="8" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -550,7 +555,7 @@
         } catch (error) {
             console.error('Error loading logs:', error);
             document.getElementById('logsTableBody').innerHTML = 
-                '<tr><td colspan="7" class="text-center text-danger">Error loading logs</td></tr>';
+                '<tr><td colspan="8" class="text-center text-danger">Error loading logs</td></tr>';
         }
     }
 
@@ -558,14 +563,22 @@
         const tbody = document.getElementById('logsTableBody');
         
         if (logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No logs found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No logs found</td></tr>';
             return;
         }
 
+        const actionBadgeMap = {
+            login: '<span class="badge bg-success">Login</span>',
+            logout: '<span class="badge bg-secondary">Logout</span>',
+            inventory_create: '<span class="badge bg-primary">Inventory Create</span>',
+            inventory_update: '<span class="badge bg-info">Inventory Update</span>',
+            inventory_delete: '<span class="badge bg-danger">Inventory Delete</span>',
+            inventory_adjust: '<span class="badge bg-warning text-dark">Inventory Adjust</span>'
+        };
+
         tbody.innerHTML = logs.map(log => {
-            const actionBadge = log.action === 'login' 
-                ? '<span class="badge bg-success">Login</span>'
-                : '<span class="badge bg-secondary">Logout</span>';
+            const actionBadge = actionBadgeMap[log.action]
+                || `<span class="badge bg-secondary">${String(log.action || 'unknown').replace(/_/g, ' ')}</span>`;
             
             const roleBadge = log.user_role === 'admin'
                 ? '<span class="badge bg-primary">Admin</span>'
@@ -584,6 +597,7 @@
                     </td>
                     <td>${roleBadge}</td>
                     <td>${actionBadge}</td>
+                    <td><small>${log.details || 'N/A'}</small></td>
                     <td>${platformBadge}</td>
                     <td><small>${log.device || 'N/A'}</small></td>
                     <td><small>${log.ip_address || 'N/A'}</small></td>

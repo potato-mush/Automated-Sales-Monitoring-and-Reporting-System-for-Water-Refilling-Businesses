@@ -6,6 +6,9 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Inventory Management</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-outline-secondary me-2" onclick="viewInventoryLogs()">
+            <i class="bi bi-journal-text me-1"></i>View All Logs
+        </button>
         <button class="btn btn-primary" onclick="showAddItemModal()">
             <i class="bi bi-plus-circle me-1"></i>Add Item
         </button>
@@ -203,11 +206,48 @@
         </div>
     </div>
 </div>
+
+<!-- Inventory Logs Modal -->
+<div class="modal fade" id="inventoryLogsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inventory Management Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 150px;">Time</th>
+                                <th style="min-width: 140px;">User</th>
+                                <th style="min-width: 90px;">Role</th>
+                                <th style="min-width: 130px;">Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryLogsTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
 <script>
     let allItems = [];
+    let inventoryLogsModal = null;
+    const inventoryActions = new Set(['inventory_create', 'inventory_update', 'inventory_delete', 'inventory_adjust']);
     const categoryLabels = {
         'caps': 'Gallon Caps',
         'seals': 'Seals',
@@ -217,6 +257,77 @@
 
     function formatCurrency(amount) {
         return '₱' + parseFloat(amount).toFixed(2);
+    }
+
+    function formatDateTime(dateString) {
+        const options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return new Date(dateString).toLocaleString('en-US', options);
+    }
+
+    function actionLabel(action) {
+        const labels = {
+            inventory_create: 'Added Item',
+            inventory_update: 'Edited Item',
+            inventory_delete: 'Deleted Item',
+            inventory_adjust: 'Adjusted Quantity'
+        };
+
+        return labels[action] || action;
+    }
+
+    async function viewInventoryLogs() {
+        if (!inventoryLogsModal) {
+            inventoryLogsModal = new bootstrap.Modal(document.getElementById('inventoryLogsModal'));
+        }
+
+        inventoryLogsModal.show();
+        await loadInventoryLogs();
+    }
+
+    async function loadInventoryLogs() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/logs?per_page=500`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load inventory logs');
+            }
+
+            const payload = await response.json();
+            const logs = (payload.data || []).filter(log => inventoryActions.has(log.action));
+            const tbody = document.getElementById('inventoryLogsTableBody');
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No inventory logs found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td><small>${formatDateTime(log.created_at)}</small></td>
+                    <td>${log.user_name || 'Unknown'}</td>
+                    <td><span class="badge ${log.user_role === 'admin' ? 'bg-primary' : 'bg-info'}">${log.user_role || 'N/A'}</span></td>
+                    <td><span class="badge bg-secondary">${actionLabel(log.action)}</span></td>
+                    <td>${log.details || 'No details available'}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading inventory logs:', error);
+            document.getElementById('inventoryLogsTableBody').innerHTML =
+                '<tr><td colspan="5" class="text-center text-danger">Error loading inventory logs</td></tr>';
+        }
     }
 
     async function loadStatistics() {

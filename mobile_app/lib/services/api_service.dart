@@ -250,6 +250,115 @@ class ApiService {
     }
   }
 
+  // Inventory APIs
+  Future<List<dynamic>> getInventoryItems({
+    String? category,
+    bool lowStockOnly = false,
+    String? search,
+  }) async {
+    final query = <String>[];
+
+    if (category != null && category.isNotEmpty && category != 'all') {
+      query.add('category=$category');
+    }
+    if (lowStockOnly) {
+      query.add('low_stock=1');
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      query.add('search=${Uri.encodeQueryComponent(search.trim())}');
+    }
+
+    final queryString = query.isEmpty ? '' : '?${query.join('&')}';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/inventory$queryString'),
+      headers: _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
+    }
+
+    throw Exception('Failed to load inventory items');
+  }
+
+  Future<Map<String, dynamic>> getInventoryStatistics() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/inventory/statistics'),
+      headers: _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    throw Exception('Failed to load inventory statistics');
+  }
+
+  Future<Map<String, dynamic>> createInventoryItem(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/inventory'),
+      headers: _getHeaders(),
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    final error = jsonDecode(response.body);
+    throw Exception(error['message'] ?? 'Failed to create inventory item');
+  }
+
+  Future<Map<String, dynamic>> updateInventoryItem(int id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/inventory/$id'),
+      headers: _getHeaders(),
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    final error = jsonDecode(response.body);
+    throw Exception(error['message'] ?? 'Failed to update inventory item');
+  }
+
+  Future<void> deleteInventoryItem(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/inventory/$id'),
+      headers: _getHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['message'] ?? 'Failed to delete inventory item');
+    }
+  }
+
+  Future<Map<String, dynamic>> adjustInventoryQuantity(
+    int id,
+    int adjustment, {
+    String? reason,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/inventory/$id/adjust'),
+      headers: _getHeaders(),
+      body: jsonEncode({
+        'adjustment': adjustment,
+        'reason': reason,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    final error = jsonDecode(response.body);
+    throw Exception(error['message'] ?? 'Failed to adjust inventory quantity');
+  }
+
   // Settings APIs
   Future<Map<String, dynamic>> getSettings() async {
     final response = await http.get(

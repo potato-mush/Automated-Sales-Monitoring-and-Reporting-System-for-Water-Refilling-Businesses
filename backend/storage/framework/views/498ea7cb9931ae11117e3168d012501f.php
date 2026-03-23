@@ -77,10 +77,26 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Transaction Types</h5>
+                <h5 class="mb-0">Recent Inventory Management Logs</h5>
             </div>
-            <div class="card-body">
-                <canvas id="typeChart"></canvas>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentInventoryLogs">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -156,7 +172,7 @@
 
 <?php $__env->startPush('scripts'); ?>
 <script>
-    let salesChart, typeChart;
+    let salesChart;
     let currentPeriod = 'daily'; // default period
 
     // Format currency
@@ -174,6 +190,17 @@
             minute: '2-digit'
         };
         return new Date(dateString).toLocaleString('en-US', options);
+    }
+
+    function formatAction(action) {
+        const labels = {
+            inventory_create: 'Added item',
+            inventory_update: 'Updated item',
+            inventory_delete: 'Deleted item',
+            inventory_adjust: 'Adjusted quantity'
+        };
+
+        return labels[action] || String(action || 'Unknown').replaceAll('_', ' ');
     }
 
     // Change chart period
@@ -241,11 +268,13 @@
 
             // Load charts
             await loadSalesChart();
-            await loadTypeChart();
+            await loadInventoryLogs();
         } catch (error) {
             console.error('Error loading dashboard:', error);
             document.getElementById('recentTransactions').innerHTML = 
                 '<tr><td colspan="5" class="text-center text-danger">Error loading data. Please refresh the page.</td></tr>';
+            document.getElementById('recentInventoryLogs').innerHTML =
+                '<tr><td colspan="4" class="text-center text-danger">Error loading logs.</td></tr>';
         }
     }
 
@@ -324,9 +353,9 @@
         }
     }
 
-    async function loadTypeChart() {
+    async function loadInventoryLogs() {
         try {
-            const typeResponse = await fetch(API_BASE_URL + '/dashboard/transaction-type-breakdown?period=today', {
+            const response = await fetch(API_BASE_URL + '/dashboard/inventory-logs', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -334,43 +363,30 @@
                 },
                 credentials: 'same-origin'
             });
-            
-            if (!typeResponse.ok) {
-                console.error('Type chart API error:', await typeResponse.text());
+
+            if (!response.ok) {
+                console.error('Inventory logs API error:', await response.text());
                 return;
             }
-            
-            const typeData = await typeResponse.json();
 
-            const typeCtx = document.getElementById('typeChart').getContext('2d');
-            
-            if (typeChart) typeChart.destroy();
-            
-            typeChart = new Chart(typeCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Walk-in', 'Delivery', 'Refill Only'],
-                    datasets: [{
-                        data: [
-                            typeData.walk_in.count,
-                            typeData.delivery.count,
-                            typeData.refill_only.count
-                        ],
-                        backgroundColor: ['#1E88E5', '#FFA726', '#66BB6A']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+            const logs = await response.json();
+            const tbody = document.getElementById('recentInventoryLogs');
+
+            if (!Array.isArray(logs) || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No inventory logs yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td><small>${formatDateTime(log.created_at)}</small></td>
+                    <td>${log.user_name || 'Unknown'}</td>
+                    <td><span class="badge ${log.user_role === 'admin' ? 'bg-primary' : 'bg-info'}">${log.user_role || 'N/A'}</span></td>
+                    <td><span class="badge bg-secondary">${formatAction(log.action)}</span></td>
+                </tr>
+            `).join('');
         } catch (error) {
-            console.error('Error loading type chart:', error);
+            console.error('Error loading inventory logs:', error);
         }
     }
 

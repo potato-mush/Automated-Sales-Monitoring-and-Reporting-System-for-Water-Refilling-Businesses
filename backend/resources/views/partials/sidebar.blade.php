@@ -1,5 +1,6 @@
-<nav class="col-md-2 d-md-block sidebar">
-    <div class="position-sticky pt-3">
+<nav id="adminSidebar" class="col-md-2 collapse d-md-block sidebar">
+    <div class="position-sticky pt-3 pb-3">
+        <div class="px-3 pb-2 text-uppercase text-muted small fw-semibold">Navigation</div>
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" 
