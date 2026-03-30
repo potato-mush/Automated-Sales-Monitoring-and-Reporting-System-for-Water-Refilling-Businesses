@@ -268,6 +268,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         );
       } else {
         final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+
+        if (transactionProvider.scannedGallons.contains(gallonCode)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('The gallon is already scanned'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
         transactionProvider.addGallon(gallonCode);
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -347,6 +358,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         );
       } else {
         final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+
+        if (transactionProvider.scannedGallons.contains(gallonCode)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('The gallon is already scanned'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
         transactionProvider.addGallon(gallonCode);
         
         setState(() {
